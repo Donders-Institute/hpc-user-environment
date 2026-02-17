@@ -272,7 +272,7 @@ OTHEROPTIONS=$*
 export LMSTAT="$CLUSTER_UTIL_ROOT/bin/lmstat -f MATLAB"
 
 # this line can be commented out to quickly disable the test completely
-$CLUSTER_UTIL_ROOT/bin/matlabXX-check || exit 1
+$CLUSTER_UTIL_ROOT/bin/slurm/matlabXX-check || exit 1
 
 echo "Starting $MATLAB_MODULE"
 
