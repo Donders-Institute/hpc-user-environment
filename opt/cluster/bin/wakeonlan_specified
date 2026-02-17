@@ -1,0 +1,69 @@
+#!/bin/bash
+
+wolcmd=$CLUSTER_UTIL_ROOT/bin/wakeonlan
+
+function usage()
+{
+cat <<EOF
+usage:
+
+ `basename $0` [hostname]
+
+Wakes up the specified computer
+EOF
+}
+
+# check arguments (if number of arguments ($#) is Not Equal to 1)
+if [ $# -ne 1 ]
+then
+	# request hostname from userinput
+	echo -n "Enter The Computername that you want to power on and press [ENTER]: "
+	read hostname
+else
+	hostname=$1
+
+fi
+
+# check if hostname is filled in
+if [ "$hostname" = "" ]; then
+	echo "Please enter a Valid Hostname"
+	usage
+	exit 1
+fi
+
+# check if hostname is filled in
+if [ "$hostname" = "" ]; then
+	echo "Please enter a Valid Hostname"
+	usage
+	exit 1
+fi
+
+
+# filter line that corresponds with hostname out of dump
+
+grep -w -i "$hostname" $CLUSTER_UTIL_ROOT/etc/wakeonlan_labpcinfo > /dev/null
+
+if [ $? -ne 0 ]; then
+	echo "The hostname you entered does not exist in our host list"
+	usage
+	exit 1
+fi
+
+# once we reached this point, we can be sure that the entered hostname is valid
+
+grep -w -i "$hostname" $CLUSTER_UTIL_ROOT/etc/wakeonlan_labpcinfo |
+# read line by line in a loop
+while read line
+do
+	pcname=`echo $line | awk '{ print $10 }' | sed 's/\"//g'`
+	# column 2 contains the mac-address (without colons)
+	# 00aabbccddee will be converted to 00:aa:bb:cc:dd:ee
+	macaddress=`echo $line | awk '{ print $9 }' | sed 's/\(..\)/\1:/g' | sed 's/:$//'`
+	
+	echo "Were now going to wake up $pcname, with MAC adress $macaddress"
+
+	$wolcmd $macaddress
+
+done
+
+exit 0

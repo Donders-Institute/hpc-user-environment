@@ -1,0 +1,25 @@
+#!/bin/sh
+# search your or others vncservers accross the cluster
+# if a username is given, it will look for that user
+#if [ -e "$1" ]
+#then
+#	SEARCHFOR=$USER
+#else
+#	SEARCHFOR=$1
+#fi
+
+#vncservers=`$CLUSTER_UTIL_ROOT/bin/cluster-vncserver | grep "$USER\ " | awk '{ print $2 }'`
+vncservers=`/usr/bin/hpcutil cluster nodes vnc -u $USER | grep $USER | awk -F "|" '{ print $3 }'`
+number_of_vncservers=`echo $vncservers | wc -w`
+if [ $number_of_vncservers = 0 ]
+then
+	echo No vncservers found 1>&2
+	exit 1
+fi
+
+for vncserver in `echo $vncservers`
+do
+	echo $vncserver
+done
+
+exit 0

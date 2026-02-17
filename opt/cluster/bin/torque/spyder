@@ -1,0 +1,120 @@
+#!/bin/bash
+#
+# shell script to start graphical anaconda/spyder as a torque job
+#
+# 20170623 edwger: do NOT reload module is one is already loaded
+# 20170425 edwger: check for eventually loaded module
+# 20170217 edwger: initial torque wrapperscript
+#
+
+# load helper functions
+source $CLUSTER_UTIL_ROOT/share/cluster-lib.sh
+
+# check if environment module is configured
+use_local_mod=0
+module list > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    use_local_mod=1
+    source $mydir/../../_modules/setup.sh
+    module load cluster
+fi
+
+if [ $use_local_mod -eq 0 ]; then
+    # the version pre-loaded by user externally
+    ANACONDA_MODULE=$(for i in `echo $LOADEDMODULES | sed 's/:/ /g'`; do echo $i; done | awk '{if ($1 ~ /^anaconda/) {print $1}}')
+else
+    # take the default version
+    ANACONDA_MODULE="anaconda3/4.3.0"
+fi
+
+#echo $ANACONDA_MODULE
+
+## in case there are more than one anaconda modules, return the last one
+ANACONDA_MODULE=`echo $ANACONDA_MODULE | awk '{print $NF}'`
+
+#echo $ANACONDA_MODULE
+
+#DEFAULT_VERSION=$(echo $ANACONDA_MODULE | sed 's/^anaconda.\///g')
+DEFAULT_VERSION=$(echo $ANACONDA_MODULE)
+
+#echo $DEFAULT_VERSION
+
+# Find available Anaconda/spyder versions and put in array.
+SPYDER_AVAIL=()
+for ana in `ls -d /opt/anaconda?`
+do
+    #echo $ana
+    for version in `ls $ana`
+    do
+        #echo $version
+        CHECKED_VERSION=($(echo $ana | sed 's/\/opt\///g')"/${version}")
+        #echo Default version is: "${DEFAULT_VERSION}"
+        #echo Checked version is: "${CHECKED_VERSION}"
+        if [ "${DEFAULT_VERSION}" == "${CHECKED_VERSION}" ]; then
+            #echo DEFAULT VERSION IS THE CHECKED VERSION
+            SPYDER_AVAIL+=($(echo ^$ana | sed 's/\/opt\///g')"/${version}")
+        else
+            SPYDER_AVAIL+=($(echo $ana | sed 's/\/opt\///g')"/${version}")
+        fi
+    done
+done
+#echo Available spyder versions: ${SPYDER_AVAIL[*]}
+#echo Number of available spyder versions: ${#SPYDER_AVAIL[@]}
+#echo ${SPYDER_AVAIL[1]}
+#echo "${SPYDER_AVAIL[*]}"
+
+# Put available SPYDER versions in reverse order (latest first)
+#TMP_SPYDER=$(echo "${SPYDER_AVAIL[*]}")
+n=${#SPYDER_AVAIL[@]}
+SPYDER_AVAIL_REVERSE=`for (( i = n-1; i >= 0; i-- )); do echo -n "${SPYDER_AVAIL[i]},"; done`
+
+# YAD example
+#holidays=$(echo "Gold Coast,Bali,Phuket,Sydney,other")
+#yad --title="My YAD Test" --text="Please enter your details:" --image="/usr/share/icons/phone.png" --form --date-format="%-d %B %Y" --separator="," --item-separator="," --field="First Name" --field="Last Name" --field="Status":RO --field="Date of birth":DT --field="Last holiday":CBE --field="List your 3 favourite foods:":TXT "" "" "All round good guy" "Click calendar icon" "$holidays"
+
+SELECTION=$(yad \
+    --center \
+    --width=300 \
+    --ontop \
+    --buttons-layout=center \
+    --title="SPYDER" \
+    --text="Select desired Anaconda/SPYDER version:" \
+    --text-align=center \
+    --form \
+    --separator=" " \
+    --item-separator="," \
+    --field="Anaconda/spyder Version:":CB \
+    "$SPYDER_AVAIL_REVERSE")
+ret=$?
+#echo $ret
+if [[ $ret -eq 1 ]] || [[ $ret -eq 252 ]]
+then
+    echo "Command Cancelled"; exit 0
+fi
+
+#echo $SELECTION
+
+IFS=' ' read -r -a CHOICES <<< $SELECTION
+SPYDER_SELECTION=$(echo ${CHOICES[0]})
+
+#echo SPYDER-version: $SPYDER_SELECTION
+#echo Loaded-module:  $DEFAULT_VERSION
+
+# If the menu selection equals the installed anaconda module do NOT 
+# unload and reload modules!
+# Only unload and reload modules if loaded and menu selected modules differ!
+if [ "$DEFAULT_VERSION" != "$SPYDER_SELECTION" ]; then
+    # No module loaded or different version selected
+    # First get rid of all the loaded modules
+    module unload anaconda anaconda2 anaconda3 > /dev/null 2>&1
+
+    # Find out the anaconda /opt directory in which the selected spyder
+    # version is located. The combination specifies the module that has
+    # to be loaded...
+    # Load the required module
+    echo "Loading module $SPYDER_SELECTION ..."
+    module load $SPYDER_SELECTION
+fi
+
+#torque_run_guiapp RStudio /opt/rstudio/$RSTUDIO_SELECTION/bin/rstudio
+torque_run_guiapp SPYDER spyder guimenu

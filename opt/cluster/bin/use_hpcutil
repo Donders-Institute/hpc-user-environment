@@ -1,0 +1,14 @@
+#!/bin/bash
+#
+# Information file to point users to new cluster information utility hpcutil
+#
+echo 
+echo "The script $0 is deprecated."
+echo "Please use the new cluster information script: hpcutil."
+echo 'Type "hpcutil cluster -h" for more information.'
+echo
+echo "Example:"
+echo "\$ hpcutil cluster qstat"
+echo 
+echo "This will produce an overview of all cluster jobs..."
+echo

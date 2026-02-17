@@ -1,0 +1,115 @@
+#!/bin/bash
+#
+# shell script to start FSL/Melodic as a slurm job
+#
+# 20170626 edwger: do NOT reload module is one is already loaded
+# 20170425 edwger: check for eventually loaded module
+# 20230821 edwger: initial slurm wrapperscript
+#
+
+# load helper functions
+source $CLUSTER_UTIL_ROOT/share/cluster-lib.sh
+
+mydir=`get_script_dir $0`
+
+# check if environment module is configured
+use_local_mod=0
+module list > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    use_local_mod=1
+    source $mydir/../../_modules/setup.sh
+    module load cluster
+fi
+
+if [ $use_local_mod -eq 0 ]; then
+    # the version pre-loaded by user externally
+    FSL_MODULE=$(for i in `echo $LOADEDMODULES | sed 's/:/ /g'`; do echo $i; done | awk '{if ($1 ~ /^fsl/) {print $1}}')
+else
+    # take the default version
+    FSL_MODULE="fsl"
+fi
+
+#echo $FSL_MODULE
+
+## in case there are more than one fsl modules, return the last one
+FSL_MODULE=`echo $FSL_MODULE | awk '{print $NF}'`
+
+#echo $FSL_MODULE
+
+DEFAULT_VERSION=$(echo $FSL_MODULE | sed 's/^fsl\///g')
+
+#echo $DEFAULT_VERSION
+
+# Find available FSL/Melodic versions and put in array.
+# FSL/Melodic version 5.0.4 as well as FSL-dev or melview are not supported
+MELODIC_AVAIL=()
+for version in `ls /opt/fsl/ | grep "^[0-9]" | grep -v "5.0.4" | sort -V`
+do
+    if [ "${DEFAULT_VERSION}" == "${version}" ]; then
+        MELODIC_AVAIL+=("^$version")
+    else
+        MELODIC_AVAIL+=("$version")
+    fi
+done
+#echo Available FSL/Melodic versions: ${MELODIC_AVAIL[*]}
+#echo Number of available FSL/Melodic versions: ${#MELODIC_AVAIL[@]}
+#echo ${MELODIC_AVAIL[1]}
+#echo "${MELODIC_AVAIL[*]}"
+
+# Put available FSL/Melodic versions in reverse order (latest first)
+#TMP_MELODICAVAIL=$(echo "${MELODIC_AVAIL[*]}")
+n=${#MELODIC_AVAIL[@]}
+MELODIC_AVAIL_REVERSE=`for (( i = n-1; i >= 0; i-- )); do echo -n "${MELODIC_AVAIL[i]},"; done`
+
+# YAD example
+#holidays=$(echo "Gold Coast,Bali,Phuket,Sydney,other")
+#yad --title="My YAD Test" --text="Please enter your details:" --image="/usr/share/icons/phone.png" --form --date-format="%-d %B %Y" --separator="," --item-separator="," --field="First Name" --field="Last Name" --field="Status":RO --field="Date of birth":DT --field="Last holiday":CBE --field="List your 3 favourite foods:":TXT "" "" "All round good guy" "Click calendar icon" "$holidays"
+
+SELECTION=$(yad \
+    --center \
+    --width=300 \
+    --ontop \
+    --buttons-layout=center \
+    --title="Melodic" \
+    --text="Select desired FSL/Melodic version:" \
+    --text-align=center \
+    --form \
+    --separator=" " \
+    --item-separator="," \
+    --field="Melodic Version:":CB \
+    "$MELODIC_AVAIL_REVERSE")
+ret=$?
+#echo $ret
+if [[ $ret -eq 1 ]] || [[ $ret -eq 252 ]]
+then
+    echo "Command Cancelled"; exit 0
+fi
+
+#echo $SELECTION
+
+IFS=' ' read -r -a CHOICES <<< $SELECTION
+MELODIC_SELECTION=$(echo ${CHOICES[0]})
+
+#echo FSL/Melodic-version: $MELODIC_SELECTION
+
+#echo MELODIC-version: $MELODIC_SELECTION
+#echo Loaded-module:  $DEFAULT_VERSION
+
+# If the menu selection equals the installed fsl/Melodic module do NOT 
+# unload and reload modules!
+# Only unload and reload modules if loaded and menu selected modules differ!
+if [ "$DEFAULT_VERSION" != "$MELODIC_SELECTION" ]; then
+    # No module loaded or different version selected
+    # First get rid of all the loaded modules
+    module unload fsl > /dev/null 2>&1
+
+    # Find out the fsl /opt directory in which the selected melodic
+    # version is located. The combination specifies the module that has
+    # to be loaded...
+    # Load the required module
+    echo "Loading module fsl/$MELODIC_SELECTION ..."
+    module load fsl/$MELODIC_SELECTION
+fi
+
+#torque_run_guiapp RStudio /opt/rstudio/$RSTUDIO_SELECTION/bin/rstudio
+run_guiapp FSL/Melodic /opt/fsl/$MELODIC_SELECTION/bin/Melodic guimenu

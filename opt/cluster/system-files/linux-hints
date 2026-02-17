@@ -1,0 +1,25 @@
+cluster-ssh|execute a command on every mentat, or a selection of mentats, see 'man cluster-ssh'
+df -hl|check local disk space
+du -sh [dir]|calculate directory size
+'ganglia'|cluster monitoring system, check out http://ganglia/
+hints|show all of these hints
+hpcutil|get various information about the cluster. Type hpcutil -h for more information
+'ssh hint'|passwordless logins between cluster nodes, see the instructions on http://intranet/cms/ssh_without_password.html
+vncinfo|find my vncserver
+pinky -l [username]|who is that user?
+man [command]|displays the on-line manual pages
+whatis [command]|displays a short description of the command
+screen|'vnc for text based sessions', tutorial: http://intranet/cms/screen.html
+convert|convert an image or sequence of images, tutorial with lots of examples: http://intranet/cms/imagemagick.html
+history|lists shell commands history
+units|convert units from one scale to another
+man ascii|shows the ASCII table
+motd|shows complete list of Messages Of The Day
+w|show who is logged on and what they are doing
+vncmanager|start/stop/configure/share your vncservers running on the cluster
+man intro|show linux introduction manual
+'linux kdb'|https://intranet.donders.ru.nl/linux.html
+lmstat -A|get overview of currently used matlab and toolbox licenses in use, try hpcutil cluster matlablic for a digested version
+tree|list contents of directories in a tree-like format
+showq|displays information about active, eligible, blocked, and/or recently completed jobs
+checkjob|displays detailed job state information and diagnostic output for a specified job

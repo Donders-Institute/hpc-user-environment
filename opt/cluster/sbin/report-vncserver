@@ -1,0 +1,9 @@
+#!/bin/bash
+#
+# this script seraches for Xvnc and shows on stdout the name of the user, the hostname and the display number
+#
+# it is intended to be used in conjuntion with a cluster-vncserver script (a.k.a. cluster-load)
+
+#ps aux | grep Xvnc | grep -v grep | tr -s ' ' | cut -d ' ' -f 1,12 | sed s/:/$HOSTNAME:/g | tr ' ' '\t'
+# bradaa - made it a little bit faster ;-)
+ps hu -C Xvnc | awk '{ print $1 " " hostname $12 }' hostname=$HOSTNAME

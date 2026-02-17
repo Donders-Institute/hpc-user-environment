@@ -1,0 +1,116 @@
+#!/bin/bash
+#
+# shell script to start Freesurfer/freeview as a torque job
+#
+# 20170626 edwger: do NOT reload module is one is already loaded
+# 20170425 edwger: check for eventually loaded module
+# 20170217 edwger: initial torque wrapperscript
+#
+
+# load helper functions
+source $CLUSTER_UTIL_ROOT/share/cluster-lib.sh
+
+mydir=`get_script_dir $0`
+
+# check if environment module is configured
+use_local_mod=0
+module list > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    use_local_mod=1
+    source $mydir/../../_modules/setup.sh
+    module load cluster
+fi
+
+if [ $use_local_mod -eq 0 ]; then
+    # the version pre-loaded by user externally
+    FREESURFER_MODULE=$(for i in `echo $LOADEDMODULES | sed 's/:/ /g'`; do echo $i; done | awk '{if ($1 ~ /^freesurfer/) {print $1}}')
+else
+    # take the default version
+    FREESURFER_MODULE="freesurfer"
+fi
+
+#echo $FREESURFER_MODULE
+
+## in case there are more than one fsl modules, return the last one
+FREESURFER_MODULE=`echo $FREESURFER_MODULE | awk '{print $NF}'`
+
+#echo $FREESURFER_MODULE
+
+DEFAULT_VERSION=$(echo $FREESURFER_MODULE | sed 's/^freesurfer\///g')
+
+#echo $DEFAULT_VERSION
+
+# Find available Freesurfer/freeview versions and put in array.
+FREEVIEW_AVAIL=()
+for version in `ls /opt/freesurfer/ | grep -v "3.0.3" | sort -V`
+do
+    if [ "${DEFAULT_VERSION}" == "${version}" ]; then
+        FREEVIEW_AVAIL+=("^$version")
+    else
+        FREEVIEW_AVAIL+=("$version")
+    fi
+done
+#echo Available Freesurfer/freeview versions: ${FREEVIEW_AVAIL[*]}
+#echo Number of available Freesurfer/freeview versions: ${#FREEVIEW_AVAIL[@]}
+#echo ${FREEVIEW_AVAIL[1]}
+#echo "${FREEVIEW_AVAIL[*]}"
+
+# Put available Freesurfer/freeview versions in reverse order (latest first)
+#TMP_FREEVIEWAVAIL=$(echo "${FREEVIEW_AVAIL[*]}")
+n=${#FREEVIEW_AVAIL[@]}
+FREEVIEW_AVAIL_REVERSE=`for (( i = n-1; i >= 0; i-- )); do echo -n "${FREEVIEW_AVAIL[i]},"; done`
+
+# YAD example
+#holidays=$(echo "Gold Coast,Bali,Phuket,Sydney,other")
+#yad --title="My YAD Test" --text="Please enter your details:" --image="/usr/share/icons/phone.png" --form --date-format="%-d %B %Y" --separator="," --item-separator="," --field="First Name" --field="Last Name" --field="Status":RO --field="Date of birth":DT --field="Last holiday":CBE --field="List your 3 favourite foods:":TXT "" "" "All round good guy" "Click calendar icon" "$holidays"
+
+SELECTION=$(yad \
+    --center \
+    --width=300 \
+    --ontop \
+    --buttons-layout=center \
+    --title="Freeview" \
+    --text="Select desired Freesurfer/freeview version:" \
+    --text-align=center \
+    --form \
+    --separator=" " \
+    --item-separator="," \
+    --field="Freeview Version:":CB \
+    "$FREEVIEW_AVAIL_REVERSE")
+ret=$?
+#echo $ret
+if [[ $ret -eq 1 ]] || [[ $ret -eq 252 ]]
+then
+    echo "Command Cancelled"; exit 0
+fi
+
+#echo $SELECTION
+
+IFS=' ' read -r -a CHOICES <<< $SELECTION
+FREEVIEW_SELECTION=$(echo ${CHOICES[0]})
+
+#echo Freeview-version: $FREEVIEW_SELECTION
+
+
+echo FREEVIEW-version: $FREEVIEW_SELECTION
+echo Loaded-module:  $DEFAULT_VERSION
+
+# If the menu selection equals the installed freesurfer module do NOT 
+# unload and reload modules!
+# Only unload and reload modules if loaded and menu selected modules differ!
+if [ "$DEFAULT_VERSION" != "$FREEVIEW_SELECTION" ]; then
+    # No module loaded or different version selected
+    # First get rid of all the loaded modules
+    module unload freesurfer > /dev/null 2>&1
+
+    # Find out the Freesurfer /opt directory in which the selected freeview
+    # version is located. The combination specifies the module that has
+    # to be loaded...
+    # Load the required module
+    echo "Loading module freesurfer/$FREEVIEW_SELECTION ..."
+    module load freesurfer/$FREEVIEW_SELECTION
+fi
+
+#torque_run_guiapp RStudio /opt/rstudio/$RSTUDIO_SELECTION/bin/rstudio
+run_guiapp Freesurfer/freeview /opt/freesurfer/$FREEVIEW_SELECTION/bin/freeview guimenu $@
+

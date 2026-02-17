@@ -1,0 +1,366 @@
+#!/bin/bash
+#
+# Yad progress bar menu with Torque JOB info for walltime and memory
+#
+# 04-06-19: edwger - changed the script to use yadjobinfo in stead of
+#                    cluster-yadjobinfo because of hpcutil introduction
+# 11-10-18: edwger - added torque execution node to overview (execnode is not
+#                    always listed in window-title. GNOME and KDE is okay
+#                    but XFCE is NOT)
+# 18-09-18: edwger - use cgroups to calculate users memory usage
+# 13-04-18: edwger - added new general option --no-focus so window
+#                    doesn't take focus
+# 25-04-17: edwger - use job NAME (instead of ID) if available 
+# 16-02-17: edwger - add button to terminate job
+# 04-02-16: edwger - changed the bytes() function to also convert the
+#                    bytes notation (e.g. -l mem=9663676416b)
+# 15-01-16: edwger - created availability to start script from command
+#                    line WITHOUT initial arguments
+# 12-01-16: edwger - created availability to start script from command
+#                    line with initial arguments
+# 11-01-16: edwger - set var wt_old even if walltime multiplier is not
+#                    effective, while wt_old is used for every three
+#                    minutes walltime adjustments/re-calculations
+# 09-01-16: edwger - added max used mem progressbar
+# 08-01-16: edwger - forked to yad-info with two progress bars in one window
+# 05-01-16: edwger - build in walltime adjustments every ~3 minutes
+# 15-12-15: edwger - change meminfo function to display real memory usage
+# 10-12-15: edwger - changed from zenity to yad (new fork of zenity)
+# 07-12-15: edwger - walltimeinfo and meminfo in one single script
+# 10-11-13: edwger - created
+#
+# Function info needs arguments
+# example: 
+# info $wt_list_secs $reqmem $pgid
+# $ info 600 512000000 2200
+#
+# On torque exec-hosts with slow CPU and walltime-multiplier the given
+# walltime will be calculated with the given walltime divided with the 
+# found walltime-multiplier: 
+# wt_list_secs=$(echo "$wt_list_secs / $wtmp" | bc)
+#
+
+
+function display_usage() {
+   # show how this script should be run
+   echo "This script can only run within an interactive torque job and" 
+   echo "is usually automatically started when submitting an interactive"
+   echo "torque job."
+
+# Here the display_usage() function ends
+}
+
+# General conversion functions for bytes, kilobytes and megabytes
+function bytes {
+   # Stolen from Robert's script cluster-jobinfo
+   # convert GB, MB and KB to bytes using the trailing indicator
+   if [ -n "$1" ]; then
+      echo $1 | awk '/[gG][bB]$/ {sub("[gG][bB]", "", $1); print 1024*1024*1024*$1}; /[mM][bB]$/ {sub("[mM][bB]", "", $1); print 1024*1024*$1}; /[kK][bB]$/ {sub("[kK][bB]", "", $1); print 1024*$1}; /[bB]$/ {sub("[bB]", "", $1); print $1}'
+   else
+      echo 0
+   fi
+
+# Here the bytes() function ends
+}
+
+function kilobytes {
+   # convert bytes to KB
+   if [ -n "$1" ]; then
+      echo "$1/(1024)" | bc
+   else
+      echo 0
+   fi
+
+# Here the kilobytes() function ends
+}
+
+function megabytes {
+   # convert bytes to MB
+   if [ -n "$1" ]; then
+      echo "$1/(1024*1024)" | bc
+   else
+      echo 0
+   fi
+
+# Here the megabytes() function ends
+}
+
+# Main progressbars function
+function info(){
+   (
+   # This contains the completely rewritten function for displaying 
+   # 3 yad progress bars for (max-)memory usage and walltime in one window
+
+   # Read all given arguments with function info
+   # info $wt_list_secs $reqmem $pid $pgid
+   secs=$1 # seconds needed for walltime
+   # echo seconden=$secs
+   requested=$2 # initial requested memory for job
+   # echo requested=$requested
+   pgid=$3 # process groupID from trqbash for used memory calculation
+   # echo processGID=$pgid
+
+   # Initial walltime setting for YAD progressbar functions
+   STARTMEM=$requested
+   # Initial memory setting for YAD progressbar funtions
+   STARTSECS=$secs
+   # Name of this var sounds pretty weird, but hey, whats in a name ;-)
+
+   # Create initial counter
+   # First time check if Remaining walltime exists in qstat -f in case of
+   # previously started job
+   count=179
+   # Check for max used memory in case of
+   # previously started job
+   if `qstat -f $PBS_JOBID | grep -iq "resources_used.mem = "`
+   then
+      # If resources_used.mem exists in qstat -f $PSB_JOBID then max_used
+      # is initially set to resources_used.mem
+      rawused=$(qstat -f $PBS_JOBID | grep "resources_used.mem = " | awk -F" " '{ print $3 }')
+      # Convert to bytes
+      max_used=`bytes $raw_used`
+   else
+      # If resources_used.mem is not present maxuses=0
+      max_used=0
+   fi
+
+   # YAD progress bars loop start here
+   while [ "$secs" -gt "0" ]
+   do
+
+      #################################################
+      ### S E T T I N G S   F O R   W A L L T I M E ###
+      #################################################
+
+      # Settings for seconds adjustments
+      ((secs-=1))
+      ((count+=1))
+
+      # adjust secs every ~3 minutes for more precise countdown
+      if [ "$count" -ge "180" ]
+      then
+         echo "count is 180 reached"
+         # First check if "Walltime.Remaining = " exists in:
+         # qstat -f $PBS_JOBID
+         if `qstat -f $PBS_JOBID | grep -iq "Walltime.Remaining = "`
+         then
+            #echo "Walltime.Remaining =" found in status jobid
+            wt_rem=$(qstat -f $PBS_JOBID | grep -i "Walltime.Remaining = " | awk -F" " '{ print $3 }')
+
+            #echo "wt_rem is: $wt_rem"
+            #echo "wt_list_secs is: $wt_list_secs"
+            #echo "wt_old is: $wt_old"
+            #echo "secs is: $secs"
+            #echo "$wt_list_secs + $wt_rem - $wt_old" | bc
+
+            # Adjust secs to new value walltime remaining taking the walltime
+            # multiplier into account
+            secs=$(echo "$wt_list_secs + $wt_rem - $wt_old" | bc)
+         fi
+
+         # Next check if "Walltime.Exceeded = " exists in:
+         # qstat -f $PBS_JOBID
+         if `qstat -f $PBS_JOBID | grep -iq "Walltime.Exceeded = "`
+         then
+            wt_rem_tmp=$(qstat -f $PBS_JOBID | grep -i "Walltime.Exceeded = " | awk -F" " '{ print $3 }')
+
+            # Adjust secs to new value walltime remaining taking the walltime
+            # multiplier into account
+            secs=$(echo "$wt_list_secs - $wt_old + $wt_rem_tmp" | bc)
+         fi
+
+         # Change the ~3 minutes counter back to zero
+         count=0
+         #echo "Walltime adjusted..."
+      fi
+
+
+      #############################################
+      ### S E T T I N G S   F O R   M E M O R Y ###
+      #############################################
+
+      #raw_used=`ps -eHo pid,pgid,sid,user,rss | grep $pgid | grep $USER | awk '{s=s+$5}END{print s"kb"}' 2>/dev/null`
+      # From August 6th, 2018 (upgrade to CentOS 7.4/Torque 6.1.2/Moab 9.1.2) we started to use cgroups. Linux cgroups
+      # are supported in the new torque version. From now on we read the memomy usage directly from cgroups.
+      #raw_used=$(cgget -r memory.usage_in_bytes /torque/$PBS_JOBID | sed '1d;$d' | awk -F" " '{ print $2 }')
+      used=$(cgget -r memory.usage_in_bytes /torque/$PBS_JOBID | sed '1d;$d' | awk -F" " '{ print $2 }')
+      # Convert to bytes
+      #used=`bytes $raw_used`
+      max_used=$(cgget -r memory.max_usage_in_bytes /torque/$PBS_JOBID | sed '1d;$d' | awk -F" " '{ print $2 }')
+      #used=$raw_used
+      ## Store max used memomry in var
+      #if [ "$maxused" -lt "$used" ]
+      #then
+      #   maxused=$used
+      #fi
+
+      # All YAD progressbar stuff goes here
+
+      # Calculate percent
+      WALLPERCENT=$((100-100*secs/STARTSECS))
+      MEMPERCENT=$((100*used/STARTMEM))
+      MAXMEMPERCENT=$((100*max_used/STARTMEM))
+
+      # Convert vars back to what we want to see
+      PRINTWALL=`echo "obase=60;$secs" | bc | sed 's/^[ ]//' | sed 's/ /:/g'`
+      PRINTMEM=`megabytes $used`
+      PRINTMEMINITIAL=`megabytes $requested`
+      PRINTMAXMEM=`megabytes $max_used`
+
+      printf "1:$WALLPERCENT\n2:$MEMPERCENT\n3:$MAXMEMPERCENT\n"
+      printf "1:#Time remaining $PRINTWALL\n2:#Memory usage: $PRINTMEM MB of requested $PRINTMEMINITIAL MB\n3:#Max used memory: $PRINTMAXMEM MB of requested $PRINTMEMINITIAL MB\n"
+
+      sleep 1
+   done
+   ) |
+   /bin/yad --geometry=470x140-1+0 \
+      --no-focus \
+      --kill-parent \
+      --title "JOBinfo for ${JOB%%.*}" \
+      --text "Exec node:\t\t<b>$HOSTNAME</b>" \
+      --multi-progress \
+      --progress \
+      --percentage=0 \
+      --bar="Elapsed Walltime":NORM \
+      --bar="Memory usage    ":NORM \
+      --bar="Max memory usage":NORM \
+      --button="Terminate this Torque JOBID: ${PBS_JOBID%%.*}":"qdel ${PBS_JOBID%%.*}" \
+      --buttons-layout=center \
+      --auto-close \
+      --auto-kill &
+
+# Here the info() function ends
+}
+
+
+
+      ###############################
+      ### M A I N   P R O G R A M ###
+      ###############################
+
+# Start main program
+#export DISPLAYARG=$@
+
+currentpid=$$
+
+# ENVIRONMENT SETTING
+export NO_AT_BRIDGE=1
+
+# Check where and how we are running
+if [ -z "$PBS_JOBID" ] ; then 
+   display_usage
+   exit 1
+fi
+
+if [ -z "$DISPLAY" ] ; then 
+   echo "invalid DISPLAY: $DISPLAY" >&2
+   exit 1
+fi
+
+# Check for PBS_JOBNAME or PBS_JOBID
+# If the PBS job has a name than use for window title
+if ! ${PBS_JOBNAME+"false"} # true if PBS_JOBNAME is set
+then
+   JOB=${PBS_JOBNAME}
+   if [ "$PBS_JOBNAME" == "STDIN" ]
+   then
+      JOB=${PBS_JOBID}
+   fi
+else
+   JOB=${PBS_JOBID}
+fi
+
+# Read given arguments from /opt/cluster/bin/trqbash
+export pgid=$1
+
+# Check if any arguments are given: command yad-info is run from commandline
+if [ $# -eq 0 ]
+then
+   export pgid=`qstat -f $PBS_JOBID | grep -v grep | grep session_id | awk -F" " '{ print $3 }'`
+fi
+
+# Check if another instance of this script is already running
+# You can only have one running instance of this script per job (session)
+#if ps -eHo pid,pgid,sid,user,rss,command | grep -v grep | grep -v $currentpid | grep $pgid | grep -iq cluster-yadjobinfo
+if ps -eHo pid,pgid,sid,user,rss,command | grep -v grep | grep -v $currentpid | grep $pgid | grep -iq yadjobinfo
+then
+   #echo another instance of yadjobinfo for this session is already running
+   #ps -eHo pid,pgid,sid,user,rss,command | grep -v grep | grep -v $currentpid | grep $pgid | grep cluster-yadjobinfo
+
+   #for yadjobinfopid in `ps -eHo pid,pgid,sid,user,rss,command | grep -v grep | grep -v $currentpid | grep $pgid | grep cluster-yadjobinfo | awk -F" " '{ print $1 }'`
+   for yadjobinfopid in `ps -eHo pid,pgid,sid,user,rss,command | grep -v grep | grep -v $currentpid | grep $pgid | grep yadjobinfo | awk -F" " '{ print $1 }'`
+   do
+      #echo "yadjobinfopid=$yadjobinfopid"
+      kill $yadjobinfopid
+   done
+
+   for yadpid in `ps -eHo pid,pgid,sid,user,rss,command | grep -v grep | grep $pgid | grep -iq /bin/yad | awk -F" " '{ print $1 }'`
+   do
+      #echo "yadpid=$yadpid"
+      kill $yadpid
+   done
+fi
+
+# Check the Torque PBS environment requirements and determine walltime...
+######################################################
+### 1: GET WALLTIME INFO for WALLTIME PROGRESS BAR ###
+######################################################
+
+export wt_list=$(qstat -f $PBS_JOBID | grep -i "Resource_List.walltime = " | awk -F" " '{ print $3 }')
+#echo $wt_list
+
+# Set wt_old var for later walltime progress bar calculation in case
+# the below walltime multiplier is not affected hence wt_old is not set
+export wt_old=$(echo $wt_list | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }')
+#echo $wt_old
+
+# Convert ##:##:## notification to seconds
+export wt_list_secs=$(echo $wt_list | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }')
+#echo $wt_list_secs
+
+# Check for walltime multiplier and adjust $wt_list_secs if needed
+ehost=`qstat -f $PBS_JOBID | grep -i exec_host | awk -F" " '{ print $3 }' | cut -d / -f 1`
+if hpcutil cluster config | grep "NODECFG\[${ehost%%/*}\]" | grep -q SPEED
+then
+   # Find multiplier info and calculate the new walltime
+   wtmp=$(hpcutil cluster config | grep "NODECFG\[${ehost%%/*}\]" | awk '{match($0,"([0-9]+.*SPEED=)(.*)",a);print substr(a[2],0,4)}')
+   #echo "Multiplier is: $wtmp"
+   export wt_old=$wt_list_secs
+   #echo "Old walltime was: $(echo "obase=60;$wt_old" | bc | sed 's/^[ ]//' | sed 's/ /:/g')"  # Convert to H:M:S.
+   export wt_list_secs=$(echo "$wt_list_secs / $wtmp" | bc)
+   #echo "New walltime is: $(echo "obase=60;$wt_list_secs" | bc | sed 's/^[ ]//' | sed 's/ /:/g')"  # Convert to H:M:S."
+
+   # Supply some extra info to user...
+   # echo "Slow CPU detected!"
+   # echo "Walltime adjusted to: $(echo "obase=60;$wt_old" | bc | sed 's/^[ ]//' | sed 's/ /:/g') devided by $wtmp."
+   echo "New Walltime: $(echo "obase=60;$wt_list_secs" | bc | sed 's/^[ ]//' | sed 's/ /:/g')"  # Convert to H:M:S.
+fi
+
+##################################################
+### 2: GET MEMORY INFO for MEMORY PROGRESS BAR ###
+##################################################
+
+# Find out the requested memory specification with qsub and convert to bytes
+export raw_reqmem=`qstat -f $PBS_JOBID | grep -i Resource_List.mem | cut -d = -f 2`
+export reqmem=`bytes $raw_reqmem`
+
+######################################################################
+### 3: WE END UP WITH 3 VARIABLES WHICH ARE NEEDED AS ARGUMENTS TO ###
+### THE INFO() PROGRESS BARS FUNCTION                              ###
+######################################################################
+#echo $pgid # Needed for memory usage calculation
+#echo $wt_list_secs # Needed for calculating walltime expiration
+#echo $reqmem # Needed for memory usage calculation
+
+
+# Check for yad GTK+ yad functionality
+if [ -e /usr/bin/yad ]
+then
+   # Here goes the actual yad meminfo-/progress-bar function info with args
+   info $wt_list_secs $reqmem $pgid
+
+   # Supply some extra info after the progress-bars start..
+   echo "Job info started..."
+fi
+
+exit

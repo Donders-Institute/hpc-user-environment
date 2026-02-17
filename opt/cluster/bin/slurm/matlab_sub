@@ -1,0 +1,189 @@
+#!/bin/bash
+#
+# roboos - 03nov2011: created
+# roboos - 13aug2012: replaced matlab startup command by matlab2012a
+# roboos - 16oct2012: changed queue from automatic into matlab (which runs on fewer machines)
+# roboos - 07dec2012: ask for walltime and mem
+# roboos - 12apr2013: made matlab version specific scripts
+# honlee - 17sep2014: integrate with Environment Modules 
+# roboos - 18aug2016: first try to get mem/walltime from script
+# roboos - 28aug2016: added command line option parsing for --mem and --walltime, added noFigureWindows for MATLAB
+# honlee - 02nov2021: fixed syntax error causing matlab executable not passed to job 
+# honlee - 11jan2022: rollback change on 02nov2021
+# honlee - 11jan2022: added `module unload matlab` in torque job to avoid MATLAB_BIN env. variable being removed
+# honlee - 12dec2025: added `--ncpus` option to use more than 1 CPU cores on a node, default is 1
+
+# load helper functions 
+source $CLUSTER_UTIL_ROOT/share/matlabXX-lib.sh
+
+usage() {
+cat << EOF
+------------------------------------------------------------------------
+
+MATLAB_SUB allows you to start a matlab script with torque directly from 
+the linux command line.
+
+You can use it like this
+  matlab_sub <script.m>
+  matlab_sub <script1.m> <script2.m> ...
+or for example like this
+  matlab_sub script*.m
+to run a whole batch of matlab scripts at once.
+
+See also /opt/fsl/bin/fsl_sub 
+
+------------------------------------------------------------------------
+EOF
+}
+
+if [ -z "$*" ]; then
+    usage
+    exit 0
+fi
+
+# default one CPU core
+NCPUS=1
+
+# parse command line options
+while [[ $# -gt 0 ]]
+do
+case $1 in
+    -h|--help)
+    HELP=yes
+    shift # past argument
+    ;;
+    --mem)
+    MEM=$2
+    shift # past argument
+    shift # past value
+    ;;
+    --walltime)
+    WALLTIME=$2
+    shift # past argument
+    shift # past value
+    ;;
+    --ncpus)
+    NCPUS=$2
+    shift # past argument
+    shift # past value
+    ;;
+    *)
+    # unknown option
+    break
+    ;;
+esac
+done
+
+if [ ! -z "$HELP" ]; then
+    usage
+    exit 0
+fi
+
+# get matlab module
+#MATLAB_MODULE=`getLoadedMatlabModule`
+MATLAB_MODULE=`getLoadedMatlabModuleFromEnv $LOADEDMODULES`
+
+echo $MATLAB_MODULE
+
+echo " "
+echo "Scheduling a batch MATLAB job on slurm:"
+
+# try to get the requirements from the (first) script
+if [ -z "$WALLTIME" ]; then
+  WALLTIME=`grep WALLTIME $1 | cut -d ' ' -f 3`
+fi
+
+# ask for the requirements
+if [ -z "$WALLTIME" ]; then
+  echo " "
+  echo "Specify the required time as HH:MM:SS (default 8:00:00)"
+  echo -n "Enter time (HH:MM:SS) or press enter for default: "
+  read WALLTIME
+fi
+
+# fall back to the default value
+if [ -z "$WALLTIME" ]; then
+  WALLTIME=8:00:00
+fi
+
+# try to get the requirements from the (first) script
+if [ -z "$MEM" ]; then
+  MEM=`grep MEM $1 | cut -d ' ' -f 3`
+fi
+
+# ask for the requirements
+if [ -z "$MEM" ]; then
+  echo " "
+  echo "Specify the required memory as XXgb (default 6gb)"
+  echo -n "Enter memory (XXgb) or press enter for default: "
+  read MEM
+fi
+
+# fall back to the default value
+if [ -z "$MEM" ]; then
+  MEM=6gb
+fi
+
+while ! [[ $(echo $MEM | tail -3c | tr '[:upper:]' '[:lower:]') == "gb" ]]; do
+    echo " "
+    echo -n "Memory value needs to be specified with required "
+    echo -e "\033[1mGB/gb\033[0m!"
+    echo -n "Specify the required memory as XX"
+    echo -ne "\033[1m\033[5mgb\033[0m!"
+    echo " (default 6gb)"
+    echo -n "Enter memory (XXgb) or press enter for default: "
+    read MEM;
+    if [ -z "$MEM" ]; then
+        MEM=6gb
+    fi
+done
+
+echo
+
+PWD=`pwd`
+#QUEUE=matlab
+QUEUE=batch
+MATLAB_ARG="-nodesktop -nosplash -nodisplay -singleCompThread -noFigureWindows"
+
+for SCRIPT in "$@" ; do
+
+    # determine the complete name of the script, including the path
+    if [ -a /"$SCRIPT" ] ; then
+        FULLNAME=$SCRIPT
+    elif [ -a "$PWD/$SCRIPT" ] ; then
+        FULLNAME="$PWD/$SCRIPT"
+    else
+        echo Error: cannot locate the MATLAB script or function $SCRIPT
+        exit 1
+    fi
+
+    # construct the command line that needs to be executed within MATLAB
+    MATLABSCRIPT="cd $PWD; try, run $FULLNAME, end; exit"
+
+    if [[ ! -v SLURM_JOB_ID ]] ; then
+        cat <<EOF | sbatch
+#!/bin/bash
+#SBATCH --job-name=matlab_sub
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=$NCPUS
+#SBATCH --time=$WALLTIME
+#SBATCH --mail-type=FAIL
+#SBATCH --mem=$MEM
+#SBATCH --partition=$QUEUE
+
+source $DCCN_MOD_DIR/setup.sh
+ulimit -v unlimited
+module unload matlab
+module load $MATLAB_MODULE
+\$MATLAB_BIN $MATLAB_ARG -r "$MATLABSCRIPT"
+
+EOF
+    else
+        # run the script in matlab on the local host
+        source $DCCN_MOD_DIR/setup.sh
+        module load $MATLAB_MODULE
+        echo $MATLABSCRIPT | $MATLAB_BIN $MATLAB_ARG
+    fi
+
+done

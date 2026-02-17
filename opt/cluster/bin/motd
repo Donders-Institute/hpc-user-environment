@@ -1,0 +1,64 @@
+#!/bin/sh
+# shows the message of the day
+# 03052013 - edwger: Removed -stdin from links line due to : Warning:
+#                    Deprecated option -stdin used ! 
+
+  CLUSTER_UTIL_ROOT=/opt/cluster
+  MOTD_FILE=$CLUSTER_UTIL_ROOT/system-files/motd
+  HINTS_FILE=$CLUSTER_UTIL_ROOT/system-files/linux-hints
+ CONFIG_DST=/etc/motd
+   TMP_FILE=`mktemp`
+#     FIGLET=$CLUSTER_UTIL_ROOT/external/figlet/figlet
+     FIGLET="$CLUSTER_UTIL_ROOT/external/figlet/figlet -d $CLUSTER_UTIL_ROOT/external/figlet/figlet_fonts -f $CLUSTER_UTIL_ROOT/external/figlet/figlet_fonts/standard.flf"
+separator="--------------------------------------------------------------------------------"
+
+while getopts ":ea:" option
+do
+    case $option in
+    e)
+        # -e option opens the motd file for editing
+        vi $MOTD_FILE
+        ;;
+
+    a)
+        # -a "some test" option adds 'timestamp|some test' to the motd
+	echo `date +%d%b%y`'|'$OPTARG >> $MOTD_FILE
+	;;
+    esac
+done
+
+# some text formatting filters
+alias center="sed  -e :a -e 's/^.\{1,77\}$/ & /;ta'"
+#alias tailpar="sed '/./{H;d;};x;s/\n/={NL}=/g' | tail -5 | sed '1s/={NL}=//;s/={NL}=/\n/g'"
+alias remove_empty_lines="sed '/^[ t]*$/d'"
+
+# definition of table function
+table() {
+	FIELD_SEPARATOR=$1
+
+        awk -F"$FIELD_SEPARATOR" ' 
+        BEGIN { print "<table border=0>" } 
+        { 
+        x=1
+        print"<tr valign=top>"
+                while ( x <= NF ) {
+			if ( x == 1) print "\t <td align=right>" $x "</td>"
+			else print  "\t <td>" $x "</td>"
+                        ++x
+                        } 
+                print "</tr>"
+        } 
+        END { 
+                print "</table>"
+        }' | links -dump -dump-width 83 |  sed 's/^   //'
+}
+echo $MOTD_FILE
+$FIGLET -c motd | remove_empty_lines
+
+echo $separator
+echo News messages:
+# show only the last 5 messages
+cat $MOTD_FILE | sed 's/|/| - |/' | table "|"
+echo $separator
+
+exit 0

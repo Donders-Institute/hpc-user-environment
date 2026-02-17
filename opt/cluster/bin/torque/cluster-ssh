@@ -1,0 +1,85 @@
+#!/bin/bash
+
+# check if sourcefile exists
+if [ -f $CLUSTER_UTIL_ROOT/share/cluster-lib.sh ]
+then
+   source $CLUSTER_UTIL_ROOT/share/cluster-lib.sh
+elif [ -f /mnt/software/cluster/share/cluster-lib.sh ]
+then
+   # check if this script is running from dccn-l034 (linux mgt system)
+   source /mnt/software/cluster/share/cluster-lib.sh
+   echo "/mnt/software/cluster/share/cluster-lib.sh sourced..."
+else
+   echo "source-file /opt/cluster/share/cluster-lib.sh not found!"
+fi
+
+# this part does the checking of the command line arguments
+
+while getopts "hil:mty" option; do
+
+    case $option in
+        h)
+            # -h: displays help message 
+            echo "Usage: cluster-ssh [-m|-t|-l <machine_file>] <command>"
+            echo ""
+            echo "  -m: run <command> via SSH on all mentat nodes via SSH"
+            echo "  -t: run <command> via SSH on all torque nodes via SSH"
+            echo "  -l: run <command> via SSH on all nodes specified in the <machine_file>"
+            echo ""
+            exit 0
+            ;;
+        i)
+            # -i: displays machine name *i*nline (only for cluster-ssh)
+            inline=1
+            ;;
+        l)
+            # -l <file>: uses *l*ist specified by <file>
+            MACHINE_FILE=$OPTARG
+            if [ -f $MACHINE_FILE ]; then
+                MACHINES=( "${MACHINE[@]}" `cat $MACHINE_FILE` )
+            else
+                echo "machine file not found: ${MACHINE_FILE}" >&2
+            fi
+            ;;
+        t)
+            # force to use torque machine file
+            if [ `isSuperUser` -eq 0 ]; then
+                echo "Must be root or tg-member to run this script on Torque nodes." >&2
+            else
+                MACHINES=( "${MACHINES[@]}" `cat $TORQUE_MACHINE_FILE` )
+            fi
+            ;;
+        m)
+	    # force to use mentat machine file
+            MACHINES=( "${MACHINES[@]}" `cat $MENTAT_MACHINE_FILE` )
+            ;;
+        y)
+            # -y: uses *y*p (NIS) to get list of mentat nodes
+            MACHINES=( "${MACHINES[@]}" `ypcat hosts | egrep -e 'mentat|dccn-c' | awk '{ print $2 }' | sort | uniq` )
+            ;;
+        \?)
+            # invalid options
+            echo "Invalid option -${option}" >&2
+            ;;
+    esac
+done
+
+shift $(($OPTIND - 1))
+
+## check if machine list is empty
+if [ -z $MACHINES ] || [ ${#MACHINES[@]} -eq 0 ]; then
+    echo "No remote machine selected" >&2
+    exit 1
+fi
+
+echo Executing \"$*\" on the selected machines
+
+## remote command execution via SSH
+for m in ${MACHINES[@]}; do
+    if [ -n "$inline" ]; then
+   	    echo -n "$m "
+    else
+        echo ------------------------------ $m ------------------------------ 
+    fi
+    ssh -x -o ConnectTimeOut=2 "$USER"@"$m" $*
+done

@@ -1,0 +1,137 @@
+#!/bin/sh
+# updates the message of the day
+#
+# $Id: update-motd,v 1.4 2009/01/26 14:48:13 bradaa Exp $
+#
+# $Log: update-motd,v $
+# Revision 1.4  2009/01/26 14:48:13  bradaa
+# changed F.C. Donders into DCCN
+#
+# Revision 1.3  2008/04/29 06:45:55  rendbru
+# Removed -stdin from links line due to : Warning: Deprecated option -stdin used!
+#
+# Revision 1.2  2008/03/18 10:21:51  bradaa
+# changed install paths and added script to set fixed ip-address on duana.fcdonders.nl
+#
+#
+# this script writes the following information to /etc/motd 
+# - a welcome to the cluster line
+# - the last N paragraphs from the MOTD_FILE
+# - 32 or 64 bit banner
+# - 3 random linux / cluster hints
+
+# check if running as root
+if [ "$UID" -ne "0" ]
+then
+    echo "Must be root to run this script."
+    exit 101
+fi
+
+
+MOTD_FILE=/opt/cluster/system-files/motd
+HINTS_FILE=/opt/cluster/system-files/linux-hints
+CONFIG_DST=/etc/motd
+FIGLET="/opt/cluster/external/figlet/figlet -f /opt/cluster/external/figlet/figlet_fonts/standard.flf"
+separator="--------------------------------------------------------------------------------"
+
+# some text formatting filters
+alias center="sed  -e :a -e 's/^.\{1,77\}$/ & /;ta'"
+alias remove_empty_lines="sed '/^[ t]*$/d'"
+
+# definition of table function
+table() {
+	FIELD_SEPARATOR=$1
+
+        awk -F"$FIELD_SEPARATOR" ' 
+        BEGIN { print "<table border=0>" } 
+        { 
+        x=1
+        print"<tr valign=top>"
+                while ( x <= NF ) {
+			if ( x == 1) print "\t <td align=right>" $x "</td>"
+			else print  "\t <td>" $x "</td>"
+                        ++x
+                        } 
+                print "</tr>"
+        } 
+        END { 
+                print "</table>"
+        }' | elinks -dump -dump-width 83 |  sed 's/^   //'
+}
+
+# crate header show header
+echo $separator
+
+if hostname | grep -q mentat
+then
+	echo -n "Welcome to the DCCN Linux Cluster. "
+fi
+echo You are currently logged in to:
+
+$FIGLET -c `hostname -s` | remove_empty_lines
+
+
+echo $separator
+echo News messages:
+# show only the last 4 messages
+cat $MOTD_FILE | tail -4 | sed 's/|/| - |/' | table "|"
+echo $separator
+
+UNAME=`uname -a`
+if echo $UNAME | grep -q "x86_64 x86_64 x86_64"
+then
+	echo This node is running 64 bit linux | center
+	echo $separator
+fi
+
+echo "Useful commands (type 'hints' to see all of them):"
+SEED=`dd if=/dev/random count=1 2>/dev/null | od -t u1 | awk 'NR==1 { print $2$3 }'`
+# But ALWAYS show the torque-hint on top
+#echo "torque|You can run a TORQUE matlab session by simply adding '-torque' (without the quotes) to your matlab-command (matlab2010b-torque)" | \
+#    awk -v seed=$SEED \
+#    'BEGIN { srand(seed) }
+#     { printf "%04d%s\n", rand()*10000, $0}' | \
+#    sort | \
+#    tail -3 | \
+#    cut -b 5- | \
+#    sed 's/|/| - |/' | \
+#    table "|"
+echo " "
+# show 2 random (less important) hints centered on the screen
+#SEED=`dd if=/dev/random count=1 2>/dev/null | od -t u1 | awk 'NR==1 { print $2$3 }'`
+cat $HINTS_FILE | \
+    awk -v seed=$SEED \
+    'BEGIN { srand(seed) }
+     { printf "%04d%s\n", rand()*10000, $0}' | \
+    sort | \
+    tail -2 | \
+    cut -b 5- | \
+    sed 's/|/| - |/' | \
+    table "|"
+
+if [ -f /etc/motd.local ]
+then
+	echo $separator
+#
+# cat /etc/motd.local | elinks -stdin -dump -dump-width 82 |  sed 's/^  //'  change RdB old 18-05-2010
+#
+# Due to syslog message :
+# Warning: Deprecated option -stdin used!
+# ELinks now determines the -stdin option value automatically.
+# In the future versions ELinks will report error when you will
+# continue to use this option.
+#
+	cat /etc/motd.local | elinks -dump -dump-width 82 |  sed 's/^  //' 
+fi
+echo $separator
+
+if hostname | grep -q mentat
+then
+	echo " "
+	echo -e "\033[1mYou are strongly encouraged to use the HPC cluster!\033[0m"  | center
+	echo -e "See: \033[1mhttp://intranet.donders.ru.nl/index.php?id=hpc\033[0m"  | center
+	echo " "
+fi
+echo $separator
+
+exit 0

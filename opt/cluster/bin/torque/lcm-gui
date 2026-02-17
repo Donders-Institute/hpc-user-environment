@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# check if environment module is configured
+use_local_mod=0
+module list > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    use_local_mod=1
+    source /opt/_modules/setup.sh
+    module load cluster
+fi
+
+# load helper functions
+source $CLUSTER_UTIL_ROOT/share/cluster-lib.sh
+
+# load lcmodel module
+module load lcmodel
+
+cmd_guiapp="${HOME}/.lcmodel/lcmgui"
+name_guiapp="LCModel-GUI"
+trq_queue="lcmgui"
+
+torque_run_guiapp "${name_guiapp}" "${cmd_guiapp}" "" "${trq_queue}"

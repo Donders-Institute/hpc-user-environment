@@ -1,0 +1,8 @@
+#!/bin/sh
+
+if [ `uname` == "Linux" ] ; then
+#/bin/grep ^MemFree /proc/meminfo
+cat /proc/meminfo
+else
+echo memory information is not available on this machine
+fi

@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# parameters
+## function to print usage
+function print_usage() {
+
+    cat <<EOF
+Usage:
+
+  $ lcm-makebasis <control file>
+
+EOF
+}
+
+# check if control file is given
+if [ $# -lt 1 ]; then
+    print_usage
+    exit 1
+fi
+
+# take control file as input argument
+control_file=$1
+
+# check if environment module is configured
+use_local_mod=0
+module list > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    use_local_mod=1
+    source /opt/_modules/setup.sh
+    module load cluster
+fi
+
+# load helper functions
+source $CLUSTER_UTIL_ROOT/share/cluster-lib.sh
+
+# load lcmodel module
+module load lcmodel
+
+# make temporary file
+current_dir=`pwd`
+cmd_app="cd ${current_dir}; cat ${control_file} | ${HOME}/.lcmodel/bin/makebasis"
+name_app="LCModel Make Basis"
+trq_queue="lcm"
+
+torque_run_app "${name_app}" "${cmd_app}" "${trq_queue}"

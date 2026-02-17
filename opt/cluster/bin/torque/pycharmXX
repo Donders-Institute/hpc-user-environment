@@ -1,0 +1,57 @@
+#!/bin/bash
+#
+# shell script to start rstudio as a torque job
+
+# load helper functions
+source $CLUSTER_UTIL_ROOT/share/cluster-lib.sh
+
+# YAD example
+#holidays=$(echo "Gold Coast,Bali,Phuket,Sydney,other")
+#yad --title="My YAD Test" --text="Please enter your details:" --image="/usr/share/icons/phone.png" --form --date-format="%-d %B %Y" --separator="," --item-separator="," --field="First Name" --field="Last Name" --field="Status":RO --field="Date of birth":DT --field="Last holiday":CBE --field="List your 3 favourite foods:":TXT "" "" "All round good guy" "Click calendar icon" "$holidays"
+
+info=$(cat << EOF
+Please select a desired PyCharm version.
+
+The pre-selected version is either the latest version (i.e. system default) or the version loaded manually before this launcher is started.
+EOF
+)
+
+SELECTION=$(yad \
+    --center \
+    --width=300 \
+    --ontop \
+    --title="PyCharm launcher" \
+    --text="${info}" \
+    --text-align=left \
+    --image=/opt/cluster/system-files/icons/pycharm-48.png \
+    --form \
+    --separator=" " \
+    --item-separator="\n" \
+    --field="version":CB \
+    "$(module_avail_versions pycharm)")
+ret=$?
+#echo $ret
+if [[ $ret -eq 1 ]] || [[ $ret -eq 252 ]]
+then
+    echo "Command Cancelled"; exit 0
+fi
+
+#echo $SELECTION
+
+IFS=' ' read -r -a CHOICES <<< $SELECTION
+PYCHARM_SELECTION=$(echo ${CHOICES[0]})
+
+# Okay. Selections are made. Setup environment for R and rstudio
+# First get rid of all the loaded modules
+module unload pycharm > /dev/null 2>&1
+
+# Load the selected R-module for R-environment
+module load pycharm/$PYCHARM_SELECTION
+
+if [ "$PBS_JOBID" == "" ]; then
+    # start the pycharm via a job
+    MEM=6 torque_run_guiapp PyCharm $PYCHARM_BIN guimenu
+else
+    # start the pycharm on this node
+    $PYCHARM_BIN
+fi

@@ -1,0 +1,1 @@
+../external/GreenAlgorithms4HPC/myCarbonFootprint.sh

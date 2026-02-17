@@ -1,0 +1,1002 @@
+#!/bin/bash
+# vnc helper script to manage vnc servers
+# todo: check for ssh keys and give info message if keys are not exchanged yet
+# changelog
+# 24aug06 - bradaa
+# added Collaborate and Disconnect options
+# added default screenresolution of a MacBook
+# list of vnc servers is now sorted
+#
+# 13sep06 - bradaa
+# added "cd -L" to all the xstartup scripts. This will make sure
+# that the user ends up in ~ instead of /mnt/homeX/username
+#
+# 13aug07 - bradaa
+# added question for Windows start menu compensation
+#
+# 16nov10 - bradaa
+# added 2048 x 1152 screen resolution
+#
+# 01apr15 - edwger
+# make vncmanager CentOS 7 compatible
+# 
+# 24mar16 - edwger
+# make vncmanager CentOS 7.2 compatible
+#
+# 04nov16 - edwger
+# start vncserver with arg -listen tcp (change in default startup to nolisten)
+# listen tcp is needed for forwarding xscreens to ports 6000+n
+# 
+# 14nov16 - edwger
+# created info-/wait-dialog windows with more info about which password should
+# be entered in case of starting/stopping a vncserver (in case that ssh-keys
+# are not exchanged and ssh-logins are authenticated by password)
+#
+# 4dec17 - edwger
+# created new info-/wait-dialog window in case no more displays are available
+#
+# 9apr18 - edwger
+# make vncmanager CentOS 7.4 compatible
+#
+# 9may18 - edwger
+# check number of already running vnc-sessions on torque access nodes and
+# and ask for confirmation if already running 2 or more vnc-sessions
+#
+# 10apr19 - edwger
+# purge all loaded modules before starting vncserver. X Window managers 
+# often use python that do have conflicts with other python versions if 
+# anaconda modules are loaded
+#
+# 21mei19 - edwger
+# Changed text with collaboration to make sure the vncviewers client option
+# Options.../Misc./Shared (dont disconnect other viewers) is set...
+#
+# 20maart23 - honlee 
+# Added -o StrictHostKeyChecking=no to skip host key checking 
+#
+# 16okt24 - honlee 
+# Code revision for 2024 November HPC workshop:
+# - simplify logic switching between regular access nodes, VGL job and course nodes
+# - removed unused functions and invalid code comments
+#
+# 10sept25 - edwger
+# Looked like when setting the vnc password the file was not written fast
+# enough, so when vncserver was started the check for .vnc/passwd was quicker
+# then the file was written. Build in a simple sleep 2 in funcion setpw
+# 
+# 03okt25 - honlee
+# Explicitly specify the vnc password file location to $HOME/.vnc/passwd
+# and removed the 2-second sleep in the last change.
+# 
+# 09feb26 - honlee
+# Added NCURSES_NO_UTF8_ACS=1 for `dialog` to display lines properly in
+# some terminal emulators, e.g. xterm.js
+
+## get the suggested node for user's new VNC server 
+function get_load_ordered_nodelist {
+    cat ${MACHINELIST} | awk '{print $1}' | hpcutil cluster nodes vnc -l /dev/stdin 2>/dev/null | \
+        grep -o -E '\S+\.dccn\.nl:[0-9]+' | awk -F ':' '{print $1}' | \
+        uniq -c | sort -n -k 1 | awk '{print $NF}' | \
+        grep '.dccn.nl' | sed 's/.dccn.nl//g'
+}
+
+## get all VNC servers running on the nodes in the ${MACHINELIST}
+function get_user_vncs {
+
+    vncservers=$(cat ${MACHINELIST} | awk '{print $1}' | hpcutil cluster nodes vnc -l /dev/stdin -u $USER 2>/dev/null | \
+                 grep -o -E '\S+\.dccn\.nl:[0-9]+')
+
+    if [[ ${PIPESTATUS[0]} -ne 0 || ${PIPESTATUS[1]} -ne 0 ]]; then
+        echo "No vncservers found" 1>&2
+        return 1	
+    fi
+
+    echo $vncservers | sed 's/ /\n/g' | sort
+}
+
+## resolve the base directory of this executable
+function get_script_dir {
+    local SOURCE=$1
+    while [ -h "$SOURCE" ]; do
+        # resolve $SOURCE until the file is no longer a symlink
+        DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+        SOURCE="$(readlink "$SOURCE")"
+ 
+        # if $SOURCE was a relative symlink,
+        # we need to resolve it relative to the path
+        # where the symlink file was located
+
+        [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+    done
+    
+    echo "$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+}
+
+function quit 
+{
+	if [ -e "$VNCINFO" ]
+	then
+		rm $VNCINFO
+	fi
+
+	if [ -e "$TMPFILE" ]
+	then
+		rm $TMPFILE
+	fi
+
+	if [ -e "$THISHOST" ]
+	then
+		rm $THISHOST
+	fi
+	#clear
+	echo Bye!
+	exit 0
+}
+
+
+function novncservers
+{
+	dialog 	--backtitle "vncmanager" \
+		--title "overview" \
+		--msgbox "No running VNC servers found" 15 65
+}
+
+
+function errorstartvnc 
+{
+	dialog 	--backtitle "vncmanager" \
+		--title "VNC session not allowed" \
+		--msgbox "Failed to start a vncserver on $1.
+
+Setting up a VNC-server session failed because $MELDING" 15 65 
+}
+
+function isAccessNode {
+	[[ "${HOSTNAME%%.*}" =~ mentat[0-9]{3}$ ]]
+}
+
+function isVglJob {
+	[[ "$PBS_QUEUE" == "vgl" || "$SLURM_JOB_PARTITION" == "vgl" ]]
+}
+
+function isInteractiveJob {
+	[[ "$PBS_ENVIRONMENT" == "PBS_INTERACTIVE" || "$SLURM_PTY_PORT" != "" ]]
+}
+
+function isInteractiveVglJob {
+	isInteractiveJob && isVglJob
+}
+
+function isCourseNode {
+	[[ "${HOSTNAME%%.*}" =~ mentat[0-9]{3}c$ ]]
+}
+
+function isVncAllowed {
+	isAccessNode || isCourseNode || isInteractiveVglJob
+}
+
+function searching
+{
+	# show waiting message
+	dialog 	--backtitle "vncmanager" \
+		--title "wait..." \
+		--infobox "Searching for running VNC servers" 15 65
+}
+
+
+function updatevncinfo
+{
+	searching
+
+	if ( isInteractiveVglJob || isCourseNode ); then
+		ps hu -C Xvnc | grep $USER | awk '{ print hostname $12 }' hostname=$HOSTNAME | sort > $VNCINFO
+	else
+		get_user_vncs | sort -t":" -k 1,1 -k 2,2n > $VNCINFO
+	fi
+}
+
+
+function vncinfodialog
+{
+	updatevncinfo
+
+	[ -s $VNCINFO ] &&
+ 		dialog 	--backtitle "vncmanager" \
+			--title "overview" \
+			--msgbox "$(echo 'You have the following VNC servers running:'; cat $VNCINFO)" 15 65 ||
+		novncservers
+}
+
+
+function disconnectvncviewers
+{
+        # takes "hostname:displaynumber" as argument
+        VNCSERVER=${1%%.*}
+        VNCDISPLAY=${1##*:}
+
+	if ( isInteractiveVglJob || isCourseNode ); then
+                # host is torque execution node in queue vgl and has
+                # property vgl. Disconnect vnc-server on local system....
+                "PATH=$PATH:/usr/X11R6/bin; vncconfig -display ${1}.0  -disconnect"
+        else
+                # host is a classic mentat system. First ssh to this system
+                # and then disconnect the vncserver over there....
+
+		ssh     -X -o StrictHostKeyChecking=no \
+		$VNCSERVER \
+                "PATH=$PATH:/usr/X11R6/bin; vncconfig -display ${1}.0  -disconnect"
+	fi
+}
+
+
+function killvncserver
+{
+        # show waiting message
+        dialog  --backtitle "vncmanager" \
+                --title "wait..." \
+                --infobox "Stopping VNC server on $SERVERTOKILL.\nEnter your windows/linux password (if applicable):" 15 65
+
+	# takes "hostname:displaynumber" as argument
+	VNCSERVER=${1%%.*}
+	VNCDISPLAY=${1##*:}
+        host=$(hostname)
+
+	if [ "$VNCSERVER" == ${host%%.*} ] ; then
+                # vncserver to kill runs on the current host 
+		PATH=$PATH:/usr/X11R6/bin; /usr/bin/vncserver -kill :$VNCDISPLAY
+	else
+                # vncserver to kill runs on different host
+		ssh -o StrictHostKeyChecking=no $VNCSERVER \
+		"PATH=$PATH://usr/X11R6/bin; vncserver -kill :$VNCDISPLAY"
+	fi
+}
+
+
+function disconnectfromlist
+{
+		
+        # loop until the user cancels
+        while true
+        do
+                updatevncinfo
+		if [ ! -s $VNCINFO ]; then
+			novncservers
+			return 0
+		fi
+                > $TMPFILE
+                exec 3<>$TMPFILE
+                # show dialog
+                dialog  --backtitle "vncmanager"    \
+                        --title "disconnect vnc viewers" \
+                        --output-fd 3 \
+                        --menu "Select the session you want to disconnect all VNC viewers from:" \
+                        15 65 6 \
+                        $(awk '{ print NR " " $1 }' < $VNCINFO)
+
+                # test if user canceled
+                [ $? -ne 0 ] && return 0
+
+                exec 3>&-
+                answer=$(cat $TMPFILE)
+
+                # extract relevant information for next action
+                SERVERTOKILL=$(sed "$answer!d" $VNCINFO)
+
+                # ask for confirmation
+                > $TMPFILE
+                exec 3<>$TMPFILE
+                dialog  --backtitle "vncmanager" \
+			--title "disconnect vnc viewers" \
+                        --defaultno   \
+                        --output-fd 3 \
+                        --yesno "Are you sure you want to disconnect all VNC viewers that are connected to $SERVERTOKILL? (note that your current viewer connection might be disconnected as well, but the VNC server is will keep on running)" 9 55
+                # disconnect vncviewers if user answered 'Yes'
+                [ $? -eq 0 ] && disconnectvncviewers $SERVERTOKILL
+        done
+}
+
+
+function killfromlist
+{
+	# loop until the user cancels or when there are no vnc servers anymore
+	while true 
+	do
+		updatevncinfo
+		if [ ! -s $VNCINFO ]; then
+			novncservers
+			return 0
+		fi
+		> $TMPFILE
+	        exec 3<>$TMPFILE
+		# show dialog
+		dialog 	--backtitle "vncmanager"    \
+			--title "stop vnc servers" \
+			--output-fd 3 \
+			--menu "Select the VNC server instance you want to stop:" \
+			15 65 7 \
+			$(awk '{ print NR " " $1 }' < $VNCINFO)
+	
+		# test if user canceled	
+		[ $? -ne 0 ] && return 0
+
+		exec 3>&-
+		answer=$(cat $TMPFILE)
+
+		# extract relevant information for next action
+		SERVERTOKILL=$(sed "$answer!d" $VNCINFO)
+		
+		# ask for confirmation
+		> $TMPFILE
+		exec 3<>$TMPFILE
+		dialog 	--backtitle "vncmanager" \
+			--defaultno   \
+			--output-fd 3 \
+			--yesno "Are you sure you want to stop the VNC server\
+				$SERVERTOKILL?" 8 55
+
+		# kill the vncserver when user answered 'Yes'
+		[ $? -eq 0 ] && killvncserver $SERVERTOKILL
+	done
+}
+
+
+function morethantwo
+{
+        searching
+	updatevncinfo
+        vnccount=$(cat $VNCINFO | wc -l)
+        if [ $vnccount -ge 2 ]; then
+                # ask for confirmation
+                dialog  --backtitle "vncmanager" \
+                        --title "count sessions" \
+                        --defaultno   \
+                        --yesno "$(echo -n 'You already have ';echo -n $vnccount; echo ' vnc-sessions running on the HPC access nodes:'; cat $VNCINFO;echo;echo;echo 'Are you sure to run yet another instance of vnc?')" 16 70
+	fi
+}
+
+function is_slurm_node {
+    grep slurm $MACHINELIST | grep -w "$1"
+}
+
+function askhost
+{
+        local nodes=()
+	
+	# Is host torque execution node?
+	if ( isInteractiveVglJob || isCourseNode ); then
+		# host is torque execution node in queue vgl and has property vgl
+		nodes+=(${HOSTNAME%%.*})
+	else
+                suggested=$(get_load_ordered_nodelist | grep -v mentat00[8-9] | grep -v dccn-c)
+                nodes+=($suggested)
+                nodes+=($(cat ${MACHINELIST} | awk '{print $1}' | grep -w "$suggested" -v | grep -v mentat00[8-9] | grep -v dccn-c))
+	fi
+
+        local node_opts=()
+        for n in ${nodes[@]}; do
+            is_slurm_node $n &&
+                node_opts+=("${n}(almalinux8/slurm-only)") ||
+                node_opts+=("${n}(centos7)")
+        done 
+
+	> $TMPFILE
+	exec 3<>$TMPFILE
+
+	dialog --backtitle "vncmanager" \
+		--title "$TITLE" \
+		--output-fd 3 \
+		--menu "On which host would you like to start the VNC server?\n        (hosts ordered from low to high load)" 15 65 7 \
+		 $(printf '%s\n' "${node_opts[@]}" | awk '{ print NR " " $1 }')
+        
+	[ $? -ne 0 ] && return 1
+
+	exec 3>&-
+	answer=$(cat $TMPFILE)
+
+        id=$(( $answer - 1 ))
+	VNCHOST=$(echo ${nodes[$id]} | awk '{print $1}')
+}
+
+
+function askres
+{
+	# asks for screen resolution
+	> $TMPFILE
+	exec 3<>$TMPFILE
+
+	dialog  --backtitle "vncmanager" \
+		--title "$TITLE"       \
+		--default-item H       \
+		--output-fd 3          \
+		--menu "Enter the screen resolution of your desktop computer
+			(computer that runs vncviewer):" 15 65 6 \
+		A "800 x  600   4:3  Landscape" \
+		B "1024 x  600 netbook Landscape" \
+		C "1024 x  768   4:3  Landscape" \
+		D "1152 x  864   4:3  Landscape" \
+		E "1280 x  768  15:9  Landscape" \
+		F "1280 x  800  16:10 Landscape" \
+		G "1280 x 1024   5:4  Landscape" \
+		H "1440 x  900  16:10 Landscape" \
+		I "1400 x 1050   4:3  Landscape" \
+		J "1600 x 1024  25:16 Landscape" \
+		K "1680 x 1050  16:10 Landscape" \
+		KR "1050 x 1680  10:16  Portrait" \
+		L "1600 x 1200   4:3  Landscape" \
+                M "1920 x 1080  16:9  Landscape" \
+                MR "1080 x 1920  9:16  Portrait" \
+		N "1920 x 1200  16:10 Landscapie" \
+		O "2048 x 1152  16:9  Landscape" \
+		P "2048 x 1536   4:3  Landscape" \
+		Q "2560 x 1600  16:10 Landscape" \
+		R "2560 x 2048   4:3  Landscape" \
+	
+
+	[ $? -ne 0 ] && return 1
+
+	exec 3>&-
+	answer=$(cat $TMPFILE)
+	case $answer in
+	        A ) SCREENRES=800x600   ;;
+	        B ) SCREENRES=1024x600  ;;
+	        C ) SCREENRES=1024x768  ;;
+	        D ) SCREENRES=1152x864  ;;
+	        E ) SCREENRES=1280x768  ;;
+		F ) SCREENRES=1280x800  ;;
+	        G ) SCREENRES=1280x1024 ;;
+	        H ) SCREENRES=1440x900  ;;
+	        I ) SCREENRES=1400x1050 ;;
+	        J ) SCREENRES=1600x1024 ;;
+	        K ) SCREENRES=1680x1050 ;;
+	        KR ) SCREENRES=1050x1680 ;;
+	        L ) SCREENRES=1600x1200 ;;
+		M ) SCREENRES=1920x1080 ;;
+		MR ) SCREENRES=1080x1920 ;;
+		N ) SCREENRES=1920x1200 ;;
+	        O ) SCREENRES=2048x1152 ;;
+	        P ) SCREENRES=2048x1536 ;;
+	        Q ) SCREENRES=2560x1600 ;;
+	        R ) SCREENRES=2560x2048 ;;
+	esac
+}
+
+
+function askstartmenucompensation
+{
+	# ask to compensate vnc server display height for Windows start menu
+	> $TMPFILE
+	exec 3<>$TMPFILE
+
+	dialog --backtitle "vncmanager" \
+		--title "$TITLE" \
+		--output-fd 3 \
+		--default-item N \
+		--menu "Do you want me to reduce the height of the vnc display to
+				    be able to see the Windows start menu?" 15 65 6 \
+        Y  "Yes, I like my Windows start menu" \
+        N  "No, thanks! Give me the full screen" \
+
+
+	[ $? -ne 0 ] && return 1
+
+	exec 3>&-
+	answer=$(cat $TMPFILE)
+
+	# extract x and y resolution
+	XRES=${SCREENRES%x*}
+	YRES=${SCREENRES#*x}
+
+	# compensation for window border and start menu
+	rX=10
+	rY=65
+	rXRES=`expr $XRES - $rX`
+	rYRES=`expr $YRES - $rY`
+
+	case $answer in
+		Y ) SCREENRES=${rXRES}x${rYRES};;
+	esac
+}
+
+
+function askwm
+{
+	# ask for window manager
+	> $TMPFILE
+	exec 3<>$TMPFILE
+
+	dialog	--backtitle "vncmanager"    \
+		--title "$TITLE" \
+		--default-item 1          \
+		--output-fd 3             \
+		--menu "Choose a window manager:" 15 65 6 \
+	1 "xfce  - Lightweight XForms CE Window Manager"   \
+	2 "KDE   - K Desktop Environment" \
+	3 "other - Use ~/.vnc/xstartup_custom script" 
+
+	[ $? -ne 0 ] && return 1
+
+	exec 3>&-
+	answer=$(cat $TMPFILE)
+
+	case $answer in
+		1 ) write_xstartup_xfce;;
+		2 ) write_xstartup_kde;;
+		3 ) write_xstartup_custom;;
+	esac
+
+	return 0
+}
+
+function askwm_no_kde
+{
+	# ask for window manager
+	> $TMPFILE
+	exec 3<>$TMPFILE
+
+	dialog	--backtitle "vncmanager"    \
+		--title "$TITLE" \
+		--default-item 1          \
+		--output-fd 3             \
+		--menu "Choose a window manager:" 15 65 6 \
+	1 "xfce  - Lightweight XForms CE Window Manager"   \
+	2 "other - Use ~/.vnc/xstartup_custom script" 
+
+	[ $? -ne 0 ] && return 1
+
+	exec 3>&-
+	answer=$(cat $TMPFILE)
+
+	case $answer in
+		1 ) write_xstartup_xfce;;
+		2 ) write_xstartup_custom;;
+	esac
+
+	return 0
+}
+
+
+function write_xstartup_xfce
+{
+	cat <<'EOF' > ~/.vnc/xstartup
+#!/bin/bash
+
+# source xinitrc-common
+. /etc/X11/xinit/xinitrc-common
+
+# setup environment
+export NO_AT_BRIDGE=1
+unset SESSION_MANAGER
+unset DBUS_SESSION_BUS_ADDRESS
+unset VTE_VERSION
+
+[ -r $HOME/.Xresources ] && xrdb $HOME/.Xresources
+
+# go to homedirectory
+cd -L
+
+# source optenv.sh
+[ -f /opt/optenv.sh ] && source /opt/optenv.sh
+
+# setting clipboard transfer
+vncconfig -nowin -set SendPrimary=0 &
+#-set SetPrimary=0 &
+#vncconfig -iconic -nowin &
+
+# start a terminal
+xfce4-terminal &
+
+# start the desktop environment
+exec /usr/bin/startxfce4 &
+EOF
+
+	# make xstartup executable
+	chmod +x ~/.vnc/xstartup
+
+	# modification for TurboVNC
+	cp ~/.vnc/xstartup ~/.vnc/xstartup.turbovnc
+}
+
+
+#function write_xstartup_gnome
+#{
+#	cat <<'EOF' > ~/.vnc/xstartup
+##!/bin/bash
+#
+### source xinitrc-common
+##. /etc/X11/xinit/xinitrc-common
+##
+### setup environment
+#export NO_AT_BRIDGE=1
+#unset SESSION_MANAGER
+#unset DBUS_SESSION_BUS_ADDRESS
+##[ -r $HOME/.Xresources ] && xrdb $HOME/.Xresources
+##
+### Prevent messed up keyboard layout
+#export XKL_XMODMAP_DISABLE=1
+##
+## go to homedirectory
+#cd -L
+##
+## source optenv.sh
+#[ -f /opt/optenv.sh ] && source /opt/optenv.sh
+##
+### setting clipboard transfer
+#vncconfig -nowin -set SendPrimary=0 &
+## -set SetPrimary=0 &
+##vncconfig -iconic -nowin &
+##
+### remove ~/.config/monitors.xml if exist (this for correct -geometry option)
+##[ -f ~/.config/monitors.xml ] && rm -f ~/.config/monitors.xml
+##
+## start a terminal
+#gnome-terminal &
+##
+### start the desktop environment
+##export GNOME_SHELL_SESSION_MODE=classic                                                                                         
+##exec gnome-session --session=gnome-classic &
+###exec gnome-session &
+#exec /etc/X11/xinit/xinitrc
+#EOF
+##
+#	# make xstartup executable
+#	chmod +x ~/.vnc/xstartup
+##
+#	# modification for TurboVNC
+#	cp ~/.vnc/xstartup ~/.vnc/xstartup.turbovnc
+##
+#}
+
+
+function write_xstartup_kde
+{
+	cat <<'EOF' > ~/.vnc/xstartup
+#!/bin/bash
+
+# source xinitrc-common
+#. /etc/X11/xinit/xinitrc-common
+
+# setup environment
+export NO_AT_BRIDGE=1
+unset SESSION_MANAGER
+unset DBUS_SESSION_BUS_ADDRESS
+[ -r $HOME/.Xresources ] && xrdb $HOME/.Xresources
+
+#if `/bin/kreadconfig --file kcmdisplayrc --group X11 --key exportKDEColors`
+#then
+#   echo changing applycolorsoption
+#   /bin/kwriteconfig --file kcmdisplayrc --group X11 --key exportKDEColors false
+#fi
+
+#/bin/kwriteconfig --file ksmserverrc --group General --key offerShutdown false
+
+# Prevent messed up keyboard layout
+export XKL_XMODMAP_DISABLE=1
+
+# go to homedirectory
+cd -L
+
+# source optenv.sh
+[ -f /opt/optenv.sh ] && source /opt/optenv.sh
+
+# setting clipboard transfer
+vncconfig -nowin -set SendPrimary=0 &
+#-set SetPrimary=0 &
+#vncconfig -iconic -nowin &
+
+# start a terminal
+konsole &
+
+# start the desktop environment
+exec /usr/bin/startkde &
+EOF
+
+	# make xstartup executable
+	chmod +x ~/.vnc/xstartup
+
+	# modification for TurboVNC
+	cp ~/.vnc/xstartup ~/.vnc/xstartup.turbovnc
+
+}
+
+
+function write_xstartup_custom
+{
+	# copy custom script to xstartup
+	cp ~/.vnc/xstartup_custom ~/.vnc/xstartup
+
+	# make xstartup executable
+	chmod +x ~/.vnc/xstartup
+
+	# modification for TurboVNC
+#	cp ~/.vnc/xstartup ~/.vnc/xstartup.turbovnc
+}
+
+
+function startserver
+{
+        morethantwo
+        [ $? -eq 1 ] && return 0
+
+	TITLE="step 1 of 4"
+	askhost
+	[ $? -eq 1 ] && return 0
+
+	TITLE="step 2 of 4"
+	askres
+	[ $? -eq 1 ] && return 0
+
+	TITLE="step 3 of 4"
+	askstartmenucompensation
+	[ $? -eq 1 ] && return 0
+
+	TITLE="step 4 of 4"
+        is_slurm_node $VNCHOST
+        if [ $? -eq 0 ]; then
+            askwm_no_kde
+	    [ $? -eq 1 ] && return 0
+        else
+            askwm
+	    [ $? -eq 1 ] && return 0
+        fi
+
+	# check if a vncpasswd is set (when vncserver invokes the vncpasswd
+	# script, the password is world readable)
+	if [ ! -f ~/.vnc/passwd ]
+	then
+		setpw
+		[ "$?" -eq "1" ] && return 0
+	fi
+	
+	# show waiting message
+	dialog 	--backtitle "vncmanager" \
+		--title "wait..." \
+		--infobox "Starting a VNC server on $VNCHOST.\nEnter your windows/linux password (if applicable):" 15 65
+
+	# start vnc server
+	if ( isInteractiveVglJob || isCourseNode ); then
+		PATH=$PATH:/usr/X11R6/bin; module purge > /dev/null 2>&1; vncserver -listen tcp -geometry $SCREENRES
+		if [ $? -ne 0 ] ; then
+			# vncserver failed to start
+			MELDING="something went wrong. Maybe no more displays are available. Try another mentat system."
+			errorstartvnc "$VNCHOST"
+			return 0
+		fi
+
+		if ( isInteractiveVglJob ); then
+			ps hu -C Xvnc | grep $USER | awk '{ print hostname $12 }' hostname=$HOSTNAME | sort > $THISHOST
+
+			dialog 	--backtitle "vncmanager" \
+				--title "VNC session running" \
+				--msgbox "$(echo 'VNC session(s) running on this torque execution host.
+
+You can use your favorite vnc-viewer (recommended is Tiger VNCviewer for seamless window scaling) to connect to:'; cat $THISHOST)" 15 65
+		fi
+	else
+		ssh -o StrictHostKeyChecking=no $VNCHOST \
+		"PATH=$PATH:/usr/X11R6/bin; module purge > /dev/null 2>&1; vncserver -listen tcp -geometry $SCREENRES"
+
+		ec=$?
+		if [ $ec -eq 98 ] ; then
+			# vncserver failed to start
+			MELDING="no more displays are available. Try another mentat system."
+			errorstartvnc "$VNCHOST"
+			return 0
+		fi
+
+		if [ $ec -ne 0 ] ; then
+			# vncserver failed to start
+			MELDING="something went wrong. Maybe no more displays are available. Try another mentat system."
+			errorstartvnc "$VNCHOST"
+			return 0
+		fi
+	fi
+
+	# show list of running vnc servers
+	vncinfodialog
+}
+
+
+function setpw
+{
+	# show instruction message
+	dialog 	--backtitle "vncmanager" \
+		--title "vnc password" \
+		--msgbox "You will be asked to enter a password. You'll need this password when connecting with VNC viewer.\n\nUse a different password if you want to set a view-only password!\n\nAnswer n(o) if you don't want to set a view-only password!" 15 65
+
+	# set the password
+	vncpasswd $HOME/.vnc/passwd
+	
+	# check if all went fine
+	if [ $? -ne 0 ]
+	then
+		# show error message
+		dialog 	--backtitle "vncmanager" \
+			--title "vnc password" \
+			--msgbox "Setting the password failed." 15 65
+		return 1
+	fi
+	return 0
+}
+
+
+function collaborate
+{
+	# share your vnc session by temporary change the password
+
+	# ask for confirmation
+	> $TMPFILE
+	exec 3<>$TMPFILE
+	dialog  --backtitle "vncmanager" \
+		--title "collaborate" \
+		--defaultno   \
+		--output-fd 3 \
+		--yesno "The Collaborate option temporarily changes your VNC password to 'helpme'. Giving your colleage oportunity connect to your VNC desktop. After 30 seconds, your VNC password is restored. Once your colleage is 'in', he or she can continue working with the VNC session until you select the Disconnect option from the main menu.\n\nAre you sure you want to do this?" 14 60
+
+	# test if user answered 'Yes'
+	if [ $? -eq 0 ]
+	then
+		sharevnc
+	fi
+
+	return 0
+}
+                
+
+function sharevnc
+{
+	# backup password
+	mv ~/.vnc/passwd ~/.vnc/oldpasswd
+
+	# make sure the password is restored when the program exits
+	trap 'if [ -f ~/.vnc/oldpasswd ]; then mv ~/.vnc/oldpasswd ~/.vnc/passwd; echo vnc password restored...; fi' EXIT
+
+	# write temporary password 'helpme'
+	# note: octal codes determined with "cat ~/.vnc/passwd | hexdump -b"
+	for OCTALBYTE in 145 151 142 201 056 243 032 130
+	do
+	        /bin/echo -n -e \\$OCTALBYTE
+	done > ~/.vnc/passwd
+
+
+	# wait and show a gauge dialog before we restore the original password
+	COUNT=0
+	(
+	while test $COUNT != 30
+	do
+	        echo `expr 100 \* $COUNT / 30`
+	        echo "XXX"
+	        echo "Please instruct your colleague to connect to one of your VNC servers. He or she should use the password 'helpme' to get in. Also make sure the option 'Shared (don't disconnect other viewers)' should be checked in your colleagues vncviewer Options.../Misc.\nThis only works as long as you see this dialog. If he or she is to late? Just try again!"
+	        echo "XXX"
+	        COUNT=`expr $COUNT + 1`
+	        sleep 1
+	done
+	) | dialog --backtitle "vncmanager" \
+			--title "collaborate" \
+			--gauge "this is some text" 15 70 0
+
+	# restore password
+	mv ~/.vnc/oldpasswd ~/.vnc/passwd
+	echo vnc password restored...
+	return 0
+}
+
+
+
+function help
+{
+	dialog 	--backtitle "vncmanager" \
+		--title "help" \
+		--msgbox "For more information about using vnc, consult intranet page http://intranet/cms/vnc.html. If you don't like to supply your linux password when starting or stopping a vnc server, consult intranet page http://intranet/cms/ssh_without_password.html to exchange ssh keys.
+If you instantly like to change your (vnc) screen resolution you can find help at intranet page https://intranet.donders.ru.nl/index.php?id=faq#c21178" 15 65
+}
+
+
+function someinitialchecks
+{
+	# create ~/.vnc if it doesn't exist yet
+	[ ! -d ~/.vnc ] && mkdir ~/.vnc
+
+	if [ ! -f ~/.vnc/xstartup_managed_by_vncmanager ]
+	then
+		# make backup of ~/.vnc if vncmanager runs for the first time
+		cp -r ~/.vnc ~/.vnc.old
+		cat <<EOF > ~/.vnc.old/README
+This is a backup of your vnc settings. It has been made the
+first time you ran 'vncmanager'.
+
+If you didn't experience problems using VNC with the vncmanager,
+you can simply delete this directory (freeing up some kb's)
+EOF
+		if [ ! -f ~/.vnc/xstartup ]
+		then
+			# write default xstartup script
+			write_xstartup_kde
+		fi
+
+		# copy existing xstartup script to xstartup_customx
+		cp ~/.vnc/xstartup ~/.vnc/xstartup_custom
+
+		# leave a mark, so that this code is only executed once
+		touch ~/.vnc/xstartup_managed_by_vncmanager
+	fi
+}
+
+
+function mainmenu
+{
+
+	# shows the main menu
+	> $TMPFILE
+	exec 3<>$TMPFILE
+	 
+	dialog	--backtitle "vncmanager"    \
+		--title "main menu"  \
+		--output-fd 3             \
+		--menu "What would you like to do:" 15 65 9 \
+		1 "List my running VNC servers"   \
+		2 "Start a (VirtualGL) VNC server"   \
+		3 "Stop a VNC server"  \
+		4 "Set my VNC password" \
+		5 "Collaborate" \
+		6 "Disconnect" \
+		7 "Help" \
+		8 "Quit"
+
+	[ $? -ne 0 ] && quit
+	
+	exec 3>&-
+	answer=$(cat $TMPFILE)
+	
+	case $answer in
+		1) vncinfodialog;;
+		2) startserver;;
+		3) killfromlist;;
+		4) setpw;;
+		5) collaborate;;
+		6) disconnectfromlist;;
+		7) help;;
+		8) quit;;
+	esac
+}
+
+## check if module command is available
+## It is an indication if we need to source setup script for env. module
+module list > /dev/null 2>&1
+
+if [ $? -ne 0 ]; then
+    echo 'sourcing setup'
+    mydir=`get_script_dir $0`
+    source $mydir/../../_modules/setup.sh
+    module load cluster
+fi
+
+if [ "$MACHINELIST" == "" ]; then
+    if ( isCourseNode ); then
+	MACHINELIST=$CLUSTER_UTIL_ROOT/etc/machines.course
+    else
+        MACHINELIST=$CLUSTER_UTIL_ROOT/etc/machines.mentat
+    fi
+fi
+
+TMPFILE=`mktemp`
+VNCINFO=`mktemp`
+THISHOST=`mktemp`
+
+someinitialchecks
+if ( ! isVncAllowed ); then
+    echo "VNC manager is only allowed on a HPC access node or in an interactive VGL job." >&2
+    exit 1
+fi
+
+# main program
+
+## make sure lines in dialog TUI shows properly in some terminal emulator
+export NCURSES_NO_UTF8_ACS=1
+
+while true
+do
+	# run the main menu
+	mainmenu
+done
+
+exit 0

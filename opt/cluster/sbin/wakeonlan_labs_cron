@@ -1,0 +1,70 @@
+#!/bin/bash
+
+source /mnt/software/_modules/setup.sh
+
+module load cluster
+
+wolcmd=$CLUSTER_UTIL_ROOT/bin/wakeonlan
+
+function usage()
+{
+cat <<EOF
+usage:
+
+ `basename $0` [confirm]
+
+Wakes up all the lab pc's computer
+EOF
+}
+
+
+
+# check arguments (if number of arguments ($#) is Not Equal to 1)
+if [ $# -ne 1 ]
+then
+	# request hostname from userinput
+	echo -n "To wake up all lab pc's type confirm and press [ENTER]: "
+	read confirm
+else
+	confirm=$1
+
+fi
+
+# check if hostname is filled in
+if [ "$confirm" = "" ]; then
+	echo "Please enter confirm to power on all lab pc's"
+	usage
+	exit 1
+fi
+
+# check if hostname is filled in
+if [ "$confirm" != "confirm" ]; then
+	echo "Please enter confirm to power on all lab pc's"
+	usage
+	exit 1
+fi
+
+
+# once we reached this point, we can be sure that the entered hostname is valid
+
+# update : 11-2-2011, RdB
+# old : grep -w -i lab /home/common/temporary/tg/dhcp_dump_clean |
+# new : grep -w -i lab /opt/cluster/wakeonlan_labpcinfo |
+
+grep -w -i lab $CLUSTER_UTIL_ROOT/etc/wakeonlan_labpcinfo |
+# read line by line in a loop
+while read line
+do
+	pcname=`echo $line | awk '{ print $10 }' | sed 's/\"//g'`
+	# column 2 contains the mac-address (without colons)
+	# 00aabbccddee will be converted to 00:aa:bb:cc:dd:ee
+	macaddress=`echo $line | awk '{ print $9 }' | sed 's/\(..\)/\1:/g' | sed 's/:$//'`
+	comment=`echo $line | awk '{ print $11, $12 }' | sed 's/\"//g' | sed 's/BOTH//g'`
+	
+	echo "Were now going to wake up $pcname, with MAC adress $macaddress comments: $comment"
+
+	#$wolcmd $macaddress
+
+done
+
+exit 0

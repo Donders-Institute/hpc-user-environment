@@ -1,0 +1,154 @@
+#!/bin/bash
+#
+# shell script to start rstudio as a torque job
+
+# load helper functions
+source $CLUSTER_UTIL_ROOT/share/cluster-lib.sh
+
+
+# Find available R versions and put in array. R version 3.1.2 does not work
+# with rstudio
+R_AVAIL=()
+for version in `ls /opt/R/ | grep -v packages | grep -v "3.1.2" | grep -v "3.3.1"`
+do
+    R_AVAIL+=("$version")
+done
+#echo Available R versions: ${R_AVAIL[*]}
+#echo Number of available R versions: ${#R_AVAIL[@]}
+#echo ${R_AVAIL[1]}
+#echo "${R_AVAIL[*]}"
+
+# Put available R versions in reverse order (latest first)
+#TMP_RAVAIL=$(echo "${R_AVAIL[*]}")
+n=${#R_AVAIL[@]}
+R_AVAIL_REVERSE=`for (( i = n-1; i >= 0; i-- )); do echo -n "${R_AVAIL[i]},"; done`
+
+RSTUDIO_AVAIL=()
+#for version in `ls /opt/rstudio/`
+for version in $(ls /opt/rstudio/ | grep -v "0.97.332\|0.99.879\|1.0.136\|1.1.456")
+do
+    RSTUDIO_AVAIL+=("$version")
+done
+#echo Available RStudio versions: ${RSTUDIO_AVAIL[*]}
+#echo Number of available RStudio versions: ${#RSTUDIO_AVAIL[@]}
+# Put available RStudio versions in reverse order (latest first)
+n=${#RSTUDIO_AVAIL[@]}
+RSTUDIO_AVAIL_REVERSE=`for (( i = n-1; i >= 0; i-- )); do echo -n "${RSTUDIO_AVAIL[i]},"; done`
+
+#R_VERSIONNR=()
+#for versionnr in `ls /opt/R/ | grep -v packages | grep -v "3.1.2" | sed -e 's/\.//g' | sort -n`
+#do
+#    R_VERSIONNR+=($versionnr)
+#done
+#echo Available R version numbers: ${R_VERSIONNR[*]}
+
+
+#marek
+RPACKAGE_AVAIL=()
+for version in `ls /opt/R-packages/`
+do
+    RPACKAGE_AVAIL+=("$version")
+done
+#echo Available RStudio versions: ${RSTUDIO_AVAIL[*]}
+#echo Number of available RStudio versions: ${#RSTUDIO_AVAIL[@]}
+# Put available RStudio versions in reverse order (latest first)
+
+
+# YAD example
+#holidays=$(echo "Gold Coast,Bali,Phuket,Sydney,other")
+#yad --title="My YAD Test" --text="Please enter your details:" --image="/usr/share/icons/phone.png" --form --date-format="%-d %B %Y" --separator="," --item-separator="," --field="First Name" --field="Last Name" --field="Status":RO --field="Date of birth":DT --field="Last holiday":CBE --field="List your 3 favourite foods:":TXT "" "" "All round good guy" "Click calendar icon" "$holidays"
+
+SELECTION=$(yad \
+    --center \
+    --width=300 \
+    --ontop \
+    --title="R/RStudio Combination" \
+    --text="Select desired R and RStudio versions:" \
+    --text-align=center \
+    --form \
+    --separator=" " \
+    --item-separator="," \
+    --field="R Version.\nDefault latest:":CB \
+    --field="RStudio Version.\nDefault latest:":CB \
+    --field="Load pre-installed R-packages.":CHK \
+    "$R_AVAIL_REVERSE" "$RSTUDIO_AVAIL_REVERSE")
+ret=$?
+#echo $ret
+if [[ $ret -eq 1 ]] || [[ $ret -eq 252 ]]
+then
+    echo "Command Cancelled"; exit 0
+fi
+
+#echo $SELECTION
+
+IFS=' ' read -r -a CHOICES <<< $SELECTION
+R_SELECTION=$(echo ${CHOICES[0]})
+RSTUDIO_SELECTION=$(echo ${CHOICES[1]})
+RPACKAGE_SELECTION=$(echo ${CHOICES[2]})
+#echo R-version: $R_SELECTION
+#echo Rstudio-version: $RSTUDIO_SELECTION
+#echo RPackage: $RPACKAGE_SELECTION
+
+
+# Okay. Selections are made. Setup environment for R and rstudio
+# First get rid of all the loaded modules
+module unload R > /dev/null 2>&1
+
+# Load the selected R-module for R-environment
+module load R/$R_SELECTION
+
+[ $? -ne 0 ] && echo "fail to load module for R $R_SELECTION" >&2 && exit 1
+
+#if [ $(grep ^VERSION= /etc/os-release | grep -o 7) ] && [ ${RSTUDIO_SELECTION%%.*} -ge 2024 ]
+#then
+#   #echo ${RSTUDIO_SELECTION%%.*}
+#   #echo $(grep ^VERSION= /etc/os-release | grep -o 7)
+#   echo "Run rstudio ${RSTUDIO_SELECTION} in a vnc-session on AlmaLinux 8."
+#   exit
+#fi
+
+#if [[ $RPACKAGE_SELECTION == true ]]
+if [ $RPACKAGE_SELECTION == TRUE ] 
+then 
+    module load R-packages/$R_SELECTION
+    [ $? -ne 0 ] && echo "fail to load module for R-package $R_SELECTION" >&2 && exit 1
+fi
+
+export RSTUDIO_WHICH_R=$(which R)
+
+# Next setup environment for selected rstudio version
+if [[ "${RSTUDIO_SELECTION%%.*}" -ge 2024 ]]
+then
+   export PATH=/opt/rstudio/$RSTUDIO_SELECTION/:$PATH
+else
+   export PATH=/opt/rstudio/$RSTUDIO_SELECTION/bin:$PATH
+fi
+
+# determine if any R-module is loaded
+#R_MODULES=$(for i in `module list 2>&1 | grep R`; do echo $i; done | awk ' {if ($1 ~ /^R/ ) {print $1}}')
+#
+#if [ ! -z $R_MODULES ]; then
+#    echo R-module gevonden: $R_MODULES
+#    echo $R_MODULES
+#else
+#    # no R-module is loaded. We load the latest one!
+#    module load R/3.3.2
+#fi
+
+# determine if any rstudio module is loaded
+#RSTUDIO_MODULE=$(for i in `module list 2>&1 | grep rstudio`; do echo $i; done | awk ' {if ($1 ~ /^R/) {print $1}}')
+#
+#if [ ! -z $RSTUDIO_MODULE ]; then
+#    # unload the loaded R module if present
+#    #module unload $RSTUDIO_MODULE
+#    echo rstudio-module gevonden: $RSTUDIO_MODULE
+#    module unload rstudio
+#fi
+
+#torque_run_guiapp RStudio /opt/rstudio/$RSTUDIO_SELECTION/bin/rstudio
+if [[ "${RSTUDIO_SELECTION%%.*}" -ge 2024 ]]
+then
+   run_guiapp RStudio /opt/rstudio/$RSTUDIO_SELECTION/rstudio guimenu
+else
+   run_guiapp RStudio /opt/rstudio/$RSTUDIO_SELECTION/bin/rstudio guimenu  
+fi

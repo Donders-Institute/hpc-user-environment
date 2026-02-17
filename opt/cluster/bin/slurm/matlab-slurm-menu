@@ -1,0 +1,115 @@
+#!/bin/bash
+#
+# shell script to start graphical matlab as a slurm job
+#
+# 20170626 edwger: Do not reload matlab module if module is already loaded
+# 20170607 edwger: small adjustments to be conform to other yad wrapper scripts
+# 20230818 edwger: initial slurm wrapperscript
+#
+
+# load helper functions
+source $CLUSTER_UTIL_ROOT/share/cluster-lib.sh
+
+# default version
+if [ $# -ge 1 ]; then
+    DEFAULT_VERSION=$(echo $1 | sed 's/^matlab\///g')
+fi
+
+USER_SCRIPT_PATH=""
+if [ $# -ge 2 ]; then
+    USER_SCRIPT_PATH=$(get_script_dir $2)/$(basename $2)
+fi
+
+# Find available MATLAB versions and put in array. MATLAB versions 7.* and
+# 2015b-old are not supported
+MATLAB_AVAIL=()
+for version in `ls /opt/matlab/ | grep "^R" | grep -v "^7.\|jdbc\|R2015b-old"`
+do
+    if [ "${DEFAULT_VERSION}" == "${version}" ]; then
+        MATLAB_AVAIL+=("^${version}")
+    else
+        MATLAB_AVAIL+=("${version}")
+    fi
+done
+#echo Available MATLAB versions: ${MATLAB_AVAIL[*]}
+#echo Number of available MATLAB versions: ${#MATLAB_AVAIL[@]}
+#echo ${MATLAB_AVAIL[1]}
+#echo "${MATLAB_AVAIL[*]}"
+
+# Put available MATLAB versions in reverse order (latest first)
+#TMP_MATLABAVAIL=$(echo "${MATLAB_AVAIL[*]}")
+n=${#MATLAB_AVAIL[@]}
+MATLAB_AVAIL_REVERSE=`for (( i = n-1; i >= 0; i-- )); do echo -n "${MATLAB_AVAIL[i]},"; done`
+
+# YAD example
+#holidays=$(echo "Gold Coast,Bali,Phuket,Sydney,other")
+#yad --title="My YAD Test" --text="Please enter your details:" --image="/usr/share/icons/phone.png" --form --date-format="%-d %B %Y" --separator="," --item-separator="," --field="First Name" --field="Last Name" --field="Status":RO --field="Date of birth":DT --field="Last holiday":CBE --field="List your 3 favourite foods:":TXT "" "" "All round good guy" "Click calendar icon" "$holidays"
+
+SELECTION=$(yad \
+    --center \
+    --width=300 \
+    --ontop \
+    --buttons-layout=center \
+    --title="MATLAB" \
+    --text="Select desired MATLAB version:" \
+    --text-align=center \
+    --form \
+    --separator=" " \
+    --item-separator="," \
+    --field="MATLAB Version:":CB \
+    --field="":LBL \
+    --field="Optional:":LBL \
+    --field="Run script from homedirectory on startup...":LBL \
+    --field="Scriptname:" \
+    "$MATLAB_AVAIL_REVERSE" "" "" "" "$USER_SCRIPT_PATH")
+ret=$?
+#echo $ret
+if [[ $ret -eq 1 ]] || [[ $ret -eq 252 ]]
+then
+    echo "Command Cancelled"; exit 0
+fi
+
+#echo $SELECTION
+
+IFS=' ' read -r -a CHOICES <<< $SELECTION
+MATLAB_SELECTION=$(echo ${CHOICES[0]})
+_SCRIPTNAME=$(echo ${CHOICES[1]})
+#echo MATLAB-version: $MATLAB_SELECTION
+#echo Scriptname: $_SCRIPTNAME
+
+#echo MATLAB-version: matlab/$MATLAB_SELECTION
+#echo Loaded-module:  matlab/$DEFAULT_VERSION
+
+# If the menu selection equals the installed matlab module do NOT 
+# unload and reload modules!
+# Only unload and reload modules if loaded and menu selected modules differ!
+if [ "$DEFAULT_VERSION" != "$MATLAB_SELECTION" ]; then
+    # No module loaded or different version selected
+    # First get rid of all the loaded modules
+    module unload matlab > /dev/null 2>&1
+
+    # Find out the matlab /opt directory in which the selected matlab
+    # version is located. The combination specifies the module that has
+    # to be loaded...
+    # Load the required module
+    echo "Loading module matlab/$MATLAB_SELECTION ..."
+    module load matlab/$MATLAB_SELECTION
+    if [ $? -ne 0 ]; then
+       exit
+    fi
+fi
+
+#MATLABCMD="source $DCCN_MOD_DIR/setup.sh; module load matlab/$MATLAB_SELECTION; /opt/matlab/$MATLAB_SELECTION/bin/matlab -desktop -singleCompThread"
+MATLABCMD="source $DCCN_MOD_DIR/setup.sh; module load matlab/$MATLAB_SELECTION; /opt/matlab/$MATLAB_SELECTION/bin/matlab -desktop -singleCompThread"
+if [ ! -z "$_SCRIPTNAME" ]
+then
+   echo Running matlab script: $_SCRIPTNAME
+   #MATLABCMD="source $DCCN_MOD_DIR/setup.sh; module load matlab/$MATLAB_SELECTION; /opt/matlab/$MATLAB_SELECTION/bin/matlab -desktop -singleCompThread -r $_SCRIPTNAME"
+   MATLABCMD="source $DCCN_MOD_DIR/setup.sh; module load matlab/$MATLAB_SELECTION; /opt/matlab/$MATLAB_SELECTION/bin/matlab -desktop -singleCompThread -r $_SCRIPTNAME"
+fi
+echo
+echo Will start matlab/$MATLAB_SELECTION ...
+echo Full command:
+echo $MATLABCMD
+#run_guiapp RStudio /opt/rstudio/$RSTUDIO_SELECTION/bin/rstudio
+MEM=6 run_guiapp MATLAB "$MATLABCMD" guimenu

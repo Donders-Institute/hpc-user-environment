@@ -1,0 +1,42 @@
+#!/usr/bin/perl 
+#
+# NAME
+#        socket_client - simple client using IO::Socket
+#
+# SYNOPSIS
+#       socket_client HOST PORT_NUMBER
+#
+# DESCRIPTION
+#       opens socket connection to HOST:PORT_NUMBER and returns one line of server output prepended
+#       with the name of the host
+#
+# EXAMPLE
+#       $ socket_client mentat070 60201
+#       mentat070  17:47:57 up 46 days, 23:30,  8 users,  load average: 0.00, 0.00, 0.00
+
+use strict;
+use IO::Socket;
+
+#Setting subroutine to handle alarm if it goes off 
+$SIG{'ALRM'} = sub { 
+	die "Error: Host could not be contacted (timeout)\n"
+}; 
+
+#alarm(1);
+#alarm(15);
+alarm(45);
+
+my $line = "";
+my $host = shift;
+my $port = shift;
+my $sock = new IO::Socket::INET(
+                   PeerAddr => $host,
+                   PeerPort => $port,
+                   Proto    => 'tcp');
+
+$sock or die "Error: Invalid hostname or service\n";
+while ( $line = <$sock> )
+{
+    print STDOUT "$line";
+}
+close $sock;

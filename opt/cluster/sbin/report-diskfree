@@ -1,0 +1,15 @@
+#!/bin/sh
+
+#if [ `hostname` == "mentat000" ] ; then
+#echo Local data partition is not yet available on this node
+#elif [ `hostname` == "mentat001" ] ; then
+#echo Local data partition is not yet available on this node
+#elif [ `hostname` == "mentat003" ] ; then
+#echo Local data partition is not yet available on this node
+#else
+#total=`df -h /data | tail -1 | tr -s " " | cut -d " " -f 2`
+#avail=`df -h /data | tail -1 | tr -s " " | cut -d " " -f 4`
+#percent=`df -h /data | tail -1 | tr -s " " | cut -d " " -f 5`
+#echo Total: "$total" Free: "$avail" on /data \($percent used\)
+#fi
+df -h /data

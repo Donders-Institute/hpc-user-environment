@@ -1,0 +1,11 @@
+#%Module1.0####################################################################### 
+##
+## Slurm-Cluster modulefile
+## 
+
+source $env(DCCN_MOD_DIR)/share/common.tcl
+
+set version [file tail $ModulesCurrentModulefile]
+set arch [get_sys_arch]
+
+source [file join [file dirname $ModulesCurrentModulefile] common.tcl]

@@ -1,0 +1,168 @@
+#!/bin/bash
+
+
+DHCPDUMP=$CLUSTER_UTIL_ROOT/etc/wakeonlan_labpcinfo
+WOLCMD=$CLUSTER_UTIL_ROOT/bin/wakeonlan
+
+# create a 'clean' list from the dump
+LIST=`mktemp`
+grep reservedip $DHCPDUMP > $LIST
+
+if [ -f $DHCPDUMP ]
+	then
+		echo "Dhcp_dump.dmp exists, continuing..."
+	else
+		echo ""
+		echo "The dhcp_dump.dmp File is not where it's supposed to be! please contact the TG."
+		echo ""
+		exit 1
+fi
+
+# about to contain the actual selection
+SELECTION=`mktemp`
+
+
+function quit
+{
+	if [ -e "$TMPFILE" ]
+	then
+		rm $TMPFILE
+	fi
+	echo ""
+	echo Bye!
+	echo ""
+	exit 0
+}
+
+function getSingleComputer
+{
+	: ${DIALOG=dialog}
+
+	inputbox=`mktemp`
+
+	$DIALOG --title "INPUT BOX" --clear \
+			--inputbox "Please Enter the computername of the computer you wish to wake up:" 16 51 2> $inputbox
+
+	result=`cat $inputbox`
+	grep -i $result $LIST > $SELECTION
+}
+
+function getLabComputers
+{
+	grep -i lab $LIST > $SELECTION
+}
+
+function getAllComputers
+{
+	cat $LIST > $SELECTION
+}
+
+function showSelection
+{
+	PCNAMES=`mktemp`
+	
+	# list selection (raw format)
+	cat $SELECTION |
+	# filter column 10 (quoted hostname)
+	awk '{ print $10 }' |
+	# remove quotes
+	sed 's/\"//g' > $PCNAMES
+	
+	dialog --backtitle "Wake-On-Lan Manager" \
+		--title "overview" \
+		--msgbox "$(echo 'Please remember that it can take up to 5 minutes for the computer to be able to accept remote desktop';echo 'We woke the following PCs:';echo; cat $PCNAMES)"  15 65	
+}
+
+function getConfirmation
+{
+	PCNAMES=`mktemp`
+	
+	# list selection (raw format)
+	cat $SELECTION |
+	# filter column 10 (quoted hostname)
+	awk '{ print $10 }' |
+	# remove quotes
+	sed 's/\"//g' > $PCNAMES
+	
+	dialog 	--backtitle "Wake-On-Lan Manager" \
+		--title "Sure?" \
+		--yesno "$(echo 'Are you sure you want to wake up all the following PCs';echo; cat $PCNAMES)"  15 65	
+
+	return $?
+	
+	#case $? in
+	#  0)
+	#		;;
+	#  1)
+	#	mainmenu;;
+	#  255)
+	#	mainmenu;;
+	#esac	
+}
+
+
+function mainmenu
+{
+	# shows the main menu
+	> $TMPFILE
+	exec 3<>$TMPFILE
+	
+	dialog	--backtitle "Wake-On-LAN Manager" \
+		--title "main menu" \
+		--output-fd 3 \
+		--menu "What would you like to do:" 15 65 8 \
+		1 "Wake up Specific Computer" \
+		2 "Wake up the Lab Computers" \
+		Q "Quit"
+	
+	[ ! "$?" -eq "0" ] && quit
+	
+	exec 3>&-
+	answer=$(cat $TMPFILE)
+	
+	
+	# evaluate the answer and execute the functions
+	case $answer in
+		1) getSingleComputer;;
+		2) getLabComputers;;
+		3) getAllComputers;;
+		Q) quit;;
+	esac
+	
+	# ask for confirmation
+	getConfirmation
+	
+	# if confirmed, wake up the selection
+	if [ $? == 0 ]
+	then	
+	
+		# wakeup computers from the list
+		cat $SELECTION | while read line
+		do
+			pcname=`echo $line | awk '{ print $10 }' | sed 's/\"//g'`
+			# column 2 contains the mac-address (without colons)
+			# 00aabbccddee will be converted to 00:aa:bb:cc:dd:ee
+			macaddress=`echo $line | awk '{ print $9 }' | sed 's/\(..\)/\1:/g' | sed 's/:$//'`
+			comment=`echo $line | awk '{ print $11, $12 }' | sed 's/\"//g' | sed 's/BOTH//g'`
+			
+			echo "Were now going to wake up $pcname, With MAC adress $macaddress comments: $comment"
+			
+			$WOLCMD $macaddress > /dev/null
+		
+		done
+		
+		showSelection
+	fi
+}
+
+
+TMPFILE=`mktemp`
+
+# main program (endless loop)
+while true
+do
+	# run the main menu
+	mainmenu
+done
+
+exit 0

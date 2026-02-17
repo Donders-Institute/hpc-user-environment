@@ -1,0 +1,24 @@
+#!/bin/bash
+#
+# this script seraches for matlab sessions atatched to terminals (which
+# exludes the separate threads of the gui) and shows on stdout the name
+# of the user, the hostname and the display number
+#
+# it is intended to be used in conjuntion with the cluster-matlab script (a.k.a. cluster-load)
+#
+# roboos,  5 jul 2006: added Ilde time to the output
+# roboos,  1 sep 2006: prevent the script from also detecting itself (test for matlab-[67] instead of matlab-)
+# roboos,  1 sep 2006: also test for matlab-2006
+# roboos,  16 jun 2008: only probe MATLAB itself, not toolbox use
+
+# this prints user-mentat-matlabversion
+# ps aux | grep -i matlab | grep dev | tr -s ' ' | tr '/' ' ' | cut -d ' ' -f 1,13,14 | sed s/opt/$HOSTNAME/g | tr ' ' '\t'
+
+# this prints user-mentat-matlabversion-idletime
+# this is less robust than using "ps", e.g. it misses sessions that are started from within a "su" or "sudo" environment
+#/opt/matlab75/etc/lmstat -c /opt/matlab75/etc/license.dat -f MATLAB | grep $HOSTNAME | awk '{print $1""$3}' | awk -F "/" '{print $1 " \""$3"/"$4"\""}' | awk '{print "w -s | grep " $1 " |grep " $2}' | /bin/sh | awk '{print "echo "$1" $HOSTNAME matlab "$4 }'|/bin/sh
+
+/opt/matlab/R2007b/etc/lmstat -c /opt/matlab/R2007b/etc/license.dat -f MATLAB | grep $HOSTNAME | awk '{print $1""$3}' | awk -F "/" '{print $1 " \""$3"/"$4"\""}' | awk '{print "w -s | grep " $1 " |grep " $2}' | /bin/sh | awk '{print "echo "$1" $HOSTNAME matlab "$4 }'|/bin/sh
+
+#w -hs | grep '/opt/matlab' | tr '/' ' ' | tr -s ' ' | sed s/opt/$HOSTNAME/g | awk '{print $1,$6,$7,$5}' | tr ' ' '\t'
+

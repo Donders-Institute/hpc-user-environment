@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# parameters
+## function to print usage
+function print_usage() {
+
+    cat <<EOF
+Usage:
+
+  $ lcm-shell
+
+EOF
+}
+
+# check if environment module is configured
+use_local_mod=0
+module list > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    use_local_mod=1
+    source /opt/_modules/setup.sh
+    module load cluster
+fi
+
+# load helper functions
+source $CLUSTER_UTIL_ROOT/share/cluster-lib.sh
+
+# load lcmodel module
+module load lcmodel
+
+# make temporary file
+current_dir=`pwd`
+name_app="LCModel Shell"
+cmd_app="echo ${name_app}"
+trq_queue="lcmgui"
+
+torque_run_app "${name_app}" "${cmd_app}" "${trq_queue}" "interactive"

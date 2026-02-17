@@ -1,0 +1,53 @@
+#!/bin/bash
+export SHELL=/bin/bash
+
+TMPDIR=/scratch/${USER}/${PBS_JOBID}
+TEMPDIR=${TMPDIR}
+TMP=${TMPDIR}
+TEMP=${TMPDIR}
+
+mkdir -p ${TMPDIR} && export TMPDIR TEMPDIR TMP TEMP
+
+if [ "$PBS_QUEUE" == "interactive" -o "$PBS_QUEUE" == "vgl" -o "$PBS_QUEUE" == "lcmgui" -o "$PBS_ENVIRONMENT" == "PBS_INTERACTIVE" ]
+then
+   export thispid="$$"
+   export thispgid=$( /bin/ps -p $thispid -o pid,pgid | grep -v grep | grep $thispid | awk -F" " '{ print $2 }' )
+   if ! ${DISPLAY+"false"} # true if DISPLAY is set
+   then
+      /opt/cluster/bin/yadjobinfo $thispgid
+   fi
+   /bin/bash -l
+else
+   /bin/bash -l
+fi
+
+########################################
+# Use below example in case of testing #
+########################################
+#if [ "$USER" == "edwger" -o "$USER" == "honlee" -o "$USER" == "maamen" -o "$USER" == "roboos" -o "$USER" == "marzwi" ]
+#if [ "$USER" == "edwger" ]
+#then
+#   #echo $USER
+#   export thispid="$$"
+#   # thispid is only used to determine the processGroupID: thispgid below
+#   #export thispgid=$( ps -p $thispid -o pgid | grep "$thispid" )
+#   export thispgid=$( /bin/ps -p $thispid -o pid,pgid | grep -v grep | grep $thispid | awk -F" " '{ print $2 }' )
+#
+#   #echo thispid=$thispid
+#   #echo thispgid=$thispgid
+#   if [ "$PBS_QUEUE" == "interactive" -o "$PBS_QUEUE" == "vgl" -o "$PBS_QUEUE" == "lcmgui" ]
+#   then
+#      if ! ${DISPLAY+"false"} # true if DISPLAY is set
+#      then
+#         if [ "$USER" == "edwger" ]
+#         then
+#            /home/tg/edwger/test/yadjobinfo $thispgid
+#         else
+#            /opt/cluster/bin/yadjobinfo $thispgid
+#         fi
+#      fi
+#   fi
+#   /bin/bash -l
+#else
+#   /bin/bash -l
+###fi

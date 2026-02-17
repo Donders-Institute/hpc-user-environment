@@ -1,0 +1,70 @@
+#!/bin/bash
+
+# slurm srun interactive bash
+
+# load helper functions
+source $CLUSTER_UTIL_ROOT/share/cluster-lib.sh
+
+# allow setting default memory via the ${MEM} variable.
+[ -z $MEM ] && MEM=4
+
+name_guiapp=BASH
+
+if [ -z $DISPLAY ]; then
+    # terminal-only mode
+    # default requirement: mem=4G, time=$(rem_walltime) which can be override by
+    # command-line options given to this script.
+    srun $@ -Q --mail-type=FAIL --job-name=${name_guiapp} --partition=interactive --pty bash -c "ulimit -v unlimited && bash -l"
+elif [ $# -gt 0 ]; then
+    # graphical mode, but user specified his own argument
+    vncDisplay=$(hostname -f):$(echo $DISPLAY | awk -F ':' '{print $2}')
+    srun $@ -Q --mail-type=FAIL --job-name=${name_guiapp} --partition=interactive --x11 --pty bash -c "ulimit -v unlimited && export DISPLAY=${vncDisplay} && /opt/cluster/bin/slurm/yadjobinfo-slurm && bash -l"
+else
+    # graphical mode
+    # use yad menu to specify requirements
+    SELECTION=$(yad \
+               --center \
+               --ontop \
+               --buttons-layout=center \
+               --title="$name_guiapp JOB" \
+               --text="Define Slurm Job Requirements:" \
+               --text-align=center \
+               --form \
+               --separator=" " \
+               --item-separator="," \
+               --field="Enter walltime requirements in HH:MM:SS.\nDefault until 8PM:" \
+               --field="Enter memory requirements in GB's.\nDefault ${MEM}GB:" \
+               --field="":LBL \
+               --field="Optional:":LBL \
+               --field="Run interactive session on specific slurm node...":LBL \
+               --field="Nodename:" \
+               "$(rem_walltime)" "${MEM}" "")
+
+    ret=$?
+    #echo $ret
+    if [[ $ret -eq 1 ]] || [[ $ret -eq 252 ]]
+    then
+       echo "Command Cancelled"; exit 0
+    fi
+    IFS=' ' read -r -a REQUIREMENTS <<< $SELECTION
+    WALLTIME=$(echo ${REQUIREMENTS[0]})
+    MEM=$(echo ${REQUIREMENTS[1]}GB)
+    NODENAME=$(echo ${REQUIREMENTS[2]})
+    # compose RESC_REQUIREMENT variable
+    RESRC_REQUIREMENT="--nodes=1 --ntasks-per-node=1 --x11 --mem=$MEM --time=$WALLTIME"
+    if [ ! -z "$NODENAME" ]
+    then
+        #Run on an optional specific node
+        #Always set short hostname first and add dccn.nl manually
+        #echo ${NODENAME%%.*}
+        RESRC_REQUIREMENT="--nodes=1 --ntasks-per-node=1 --x11 --mem=$MEM --time=$WALLTIME --nodelist=${NODENAME%%.*}"
+        #echo $RESRC_REQUIREMENT
+    fi
+
+    echo -e "\033[1mSubmitting job for interactive BASH session ... \033[0m"
+    echo
+    echo "srun -Q --mail-type=FAIL --job-name=${name_guiapp} ${RESRC_REQUIREMENT} --partition=interactive --pty bash -c \"ulimit -v unlimited && export DISPLAY=${vncDisplay} && /opt/cluster/bin/slurm/yadjobinfo-slurm && bash -l\""
+    echo
+    vncDisplay=$(hostname -f):$(echo $DISPLAY | awk -F ':' '{print $2}')
+    srun -Q --mail-type=FAIL --job-name=${name_guiapp} --partition=interactive ${RESRC_REQUIREMENT} --pty bash -c "ulimit -v unlimited && export DISPLAY=${vncDisplay} && /opt/cluster/bin/slurm/yadjobinfo-slurm && bash -l"
+fi

@@ -1,0 +1,41 @@
+#!/bin/bash
+
+function get_script_dir() {
+    ## resolve the base directory of this executable
+    local SOURCE=$1
+    while [ -h "$SOURCE" ]; do
+        # resolve $SOURCE until the file is no longer a symlink
+        DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+        SOURCE="$(readlink "$SOURCE")"
+ 
+        # if $SOURCE was a relative symlink,
+        # we need to resolve it relative to the path
+        # where the symlink file was located
+
+        [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+    done
+    
+    echo "$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+}
+
+v=$( basename $0 | sed -r 's:matlab::g' )
+
+## check if module command is available
+## It is an indication if we need to source setup script for env. module
+which module > /dev/null 2>&1
+
+if [ $? -ne 0 ]; then
+    mydir=`get_script_dir $0`
+    source $mydir/../../_modules/setup.sh
+    module load cluster
+fi
+
+## expand aliases for non-interactive shell (e.g. a script)
+shopt -s expand_aliases
+
+## load module for requested matlab version
+module unload matlab > /dev/null 2>&1
+module load matlab/R${v}
+
+## run the matlab script
+matlab $*

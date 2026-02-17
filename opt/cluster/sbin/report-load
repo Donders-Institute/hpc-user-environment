@@ -1,0 +1,5 @@
+#!/bin/sh
+
+#echo -n "Load:     "
+#uptime | tr -s ' ' | cut -d ' ' -f 3-13
+uptime

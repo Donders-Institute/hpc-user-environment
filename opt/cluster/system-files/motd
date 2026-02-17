@@ -1,0 +1,237 @@
+8jun04|New monitoring software has been installed, which you can use to see the CPU, memory and disk usage (and many other things) of any mentat node. Please have a look at http://intranet.fcdonders.nl/cluster/
+4oct04|An up-to-date web browser has been installed and is available on every mentat-like server. Type 'firefox' on the command-line to start is. More information on http://www.getfirefox.com
+1nov04|Mentat003 has been disjoined from the cluster. This machine will be installed as additional file server (i.e. bond2) to accomodate the planned growth of central storage and to reduce the load on bond.
+5jan05|On 10-01-2005 mentat12, mentat17 and mentat18 will be disjoined from the mentat cluster. They will be reinstalled as dekstop machine.
+7mar05|From monday 14 March Mentat020 will leave the cluster. It will be reinstalled as a desktop workstation. It will be available until monday morning. Please do not log in on the machine from friday, so we can take out the Mentat on monday morning.
+19jan05|Burning CDs/DVDs in the MEG lab (+Chunky): http://intranet/cms/burncd.html.
+2jun05|From Tuesday 7th June Mentat001, Mentat031, Mentat032 and Mentat033 will leave the cluster. They will be reinstalled as desktop workstations. They will be available until monday morning. Please finish all running processes and do not log in on these machines from Monday, so we can take these Mentats out of the cluster on Tuesday morning.
+20jun05|Mentat034 will leave the cluster a.s.a.p for testing purposes. All data will be copied to Mentat038.
+30jun05|Welcome to our new network. Mentat035 upto mentat60 are up and running. If you encounter any strange behavior let us 
+21jul05|Karibu new Mentats! Some of you already moved up to the higher nodes, running at 3.2Ghz and stuffed with 4Gb of RAM! To make some space for all of them, we need to shuffle some rack space. Therefore we need to take mentat048 and mentat050 down for a while (it is save to leave your things in /data). Since the rack is fully stuffed now, we also need to take the lowest mentats: 35 and 36. Please move your jobs elsewhere. Thank you!
+26jul05|Mentat 35 and 36 made place for 68 and 69! Mentat070 is not yet available because of some hardware related problems.
+27jul05|Mentat 37 is going to make room for mentat 70 (look like this one is working ok now). Please make sure that you have no jobs running next monday morning, as this node will then be taken out.
+8aug05|CTFv5 software is available for testing: http://intranet/cms/ctf.html
+30aug05|The mentats 038, 039, 040, 041 will leave our cluster thursday 1st of September. They will be reinstalled as a desktop workstation. Please remove all data of these mentats.
+14sep05|Several mentats wille leave the cluster next Wednesday 21st of september. They will be used as a new desktop workstation. It will be mentat042 till mentat048. Please do not log in or start a new job on Tuesday 20th of September.
+21sep05|Loke has Curry installed: http://intranet/cms/curry.html
+29nov05|So we had a power outage that took longer than the backup batteries lasted. All servers have been down for a while. Everything seems to work fine again. If things don't work as usual, please let the tech- nical group know!
+10oct05|Installed multiple file rename and move utility: mmv. See 'man mmv' for instructions. Handy to manage large numbers of MRI files!
+3nov05|New cluster script: cluster-matlab. Returns Matlab usage of all mentat nodes.
+8nov05|upgrade: CTF 5.01 => 5.02 (http://intranet.fcdonders.nl/cms/ctf.html)
+6dec05|On Monday 12th of December Mentat049 till Mentat052 will leave the cluster. They will be used as desktop workstation. Please do not log in from monday 12th of December and remove your data from the /data directory
+18jan06|upgrade: CTF 5.02 => 5.03 (http://intranet.fcdonders.nl/cms/ctf.html)
+18Jan06|Mentat001 is in production.
+21jan06|Forgot where you have a vnc server running? Try 'vncinfo'!
+23jan06|Mentat053 and Mentat054 have left the cluster for desktop usage.
+25jan06|Mentat081 - Mentat091 joined the cluster.
+25jan06|Mentat077 has some hardware problems. This machine will be unavailable until further notice.
+31jan06|Mentat077 is repaired and back online!
+6feb06|Mentat053 - mentat060 left the cluster.
+9feb06|Mentat094 - mentat104 are added to the cluster. These are 64bit linux systems. Check out http://intranet/cms/64bit.html to see what the consequences are.
+28feb06|Howto fix GLIBC_2.0 error message, when running Symbolic Toolbox in Matlab, check out http://intranet.fcdonders.nl/cms/1804.html
+16mar06|Mentat093 has left the cluster to be installed as desktop linux pc.
+23mar06|New: vncmanager, an interactive script to start/stop/configure your vncservers.
+31mar06|The default screensaver settings are changed: The screensaver is turned off and it will not lock the screen. If you want these default settings, remove the file .xscreensaver in your home directory.
+4apr06|upgrade: CTF 5.03 => 5.04, see /opt/ctf-5.04/doc/readme.v5.0.4-linux for changes. General info on http://intranet/cms/ctf.html.
+13apr06|On Monday 17th of April Mentat104 will leave the cluster to serve as a test machine. Please do not log in on this machine from now on. Please be sure to remove your date from this machine. 
+24apr06|New matlab version 7.2.0 installed. Enter matlab72 at the commandprompt to start this new version.
+25apr06|Mentat002 is in production, for more info check http://intranet/cms/542.html
+31may06|Mentat103 will leave the cluster on monday 5th of June to serve as a desktop workstation. Please do not log in on this machine from Friday 2nd of may. Please remove your data of the /data partition.
+5jun06|Removed from the cluster: mentat103
+9jun06|Mentat070 had some boot problems, but its back online and running. Feel free to use this Mentat!
+14jun06|The Curry46 licence has been updated. To activate the Curry configuration in your home directory, see the directions on http://intranet/cms/curry.html#10091. Curry is installed on MEG lab computer Loke.
+14jun06|Thanks for attending the Linux session last Friday, you can find the tutorial on http://intranet/cms/linux_tutorial.html. If you have any comments, please let me know - Bram.
+19jun06|Limited usage of Brainvoyager licenses from tuesday 20-06-06 till friday 23-06-06, mentat061 till 74 are being used for the toolkit course. Please be aware to not start big calculations on these mentats. Marek
+21jun06|CTF Technical Advisory #23, for more information http://intranet/cms/ctf_ta23.html
+21jun06|Minor change: On request of Job, the mentat data shares for windows are now lowercase. Ie.: \\mentat102\Data changed to \\mentat102\data.
+28jun06|The Matlab usage rules on mentat will be enforced: the matlab startup script now checks that you follow the rules. You are not allowed any more to start more than 1 matlab per mentat node, or more than 3 matlabs on all nodes. See http://intranet/cms/matlab.html for the full details.
+4jul06|cluster-matlab now also shows free cluster nodes.
+6jul06|cluster-matlab now also shows the idle time of each matlab session. The idle time is the time that the user did not interact with matlab. A busy and long-running matlab session may also be also marked "idle", so you should also look at "top" or at "cluster-load" before complaining that someone else forgot to close his session.
+31jul06|Removed from the cluster: mentat102
+4sep06|Removed from the cluster: mentat061, mentat062
+9sep06|Mentat100 was crashed and rebooted.
+13sep06|Switched from using "cluster-matlab" to "lmstat" for counting matlab usage. This has the effect that your Windows/Desktop matlab sessions are now also counted to determine whether you can start a matlab on a mentat node.
+22sep06|There's some cluster maintenance upcoming. Check http://intranet/cms/cluster-maintenance.html for more information.
+25sep06|Mentat63 till Mentat067 will be removed from the cluster on Wednesday to serve as desktop workstation. Please do not log in on this machine from Tuesday 26th of September. Please remove/move your data of the /data partition.
+4oct06|There are some problems releated to mentat070 till mentat085. You might experience problems using Fieldtrip and SPM.
+5oct06|The problem on mentats 70 to 85 is solved. Please let the TG know if you encounter problems running applications (spm/fieldtrip) under Matlab 7.1
+6oct06|Mentat100 and 101 will be offline until monday 12:00. This due to unexpected problems during the maintenance.
+9oct06|upgrade: CTF 5.04 => 5.2.0, see /opt/ctf-5.2.0/doc/readme.v5.2-linux and readme.v5.2.1-linux for changes. General info on http://intranet/cms/ctf.html
+18oct06|New mentat's in the cluster. Mentat102 till Mentat111 have joined the cluster. Check http://intranet.fcdonders.nl/cms/542.html for more information.
+24oct06|Mentat70 till Mentat073 will be removed from the cluster on Monday 30 october to serve as desktop workstation. Please do not log in on this machine from Friday 27th of October. Please remove/move your data of the /data partition.
+26oct06|New version of Matlab available: Matlab R2006B. It starts with the following command: matlab73.
+7nov06|On Monday 13th of november at 9:00am mentat089 till mentat091 will be turned off for about 15 minutes for a memory upgrade.
+13nov06|All mentat nodes have at least 4Gb of internal memory!! Use the command 'cluster-memfree' or 'cluster-info' to get some more detail.
+9jan07|The Curry licence has been renewed. You can either reinstall the curry settings in your homedirectory or enter the following key if asked for: 85FC51F6C4ACAB9A. More info: http://intranet/cms/curry.html
+6feb07|On 14th of Februari there will be a PET-course in the student room. Due to this course several Mentats will be reserved for this course. Please do NOT use these Mentats on the 14th of Februari (till 13:00 PM) so the course-students will not be having performance problems. The nominated Mentats are Mentat100 till Mentat111.
+13feb07|Installed latest brainvoyager version (1.8.6). To start it, type "brainvoyager-1.8.6" from the command line. If you encounter any problems, please contact Bram.
+14feb07|Due to some technical problems Mentat108 will be unavailable untill furthur notice.
+23feb07|On 28th of Februari there will be a PET-course in the student room. Due to this course several Mentats will be reserved for this course. Please do NOT use these Mentats on the 28th of Februari (till 13:00 PM) so the course-students will not be having performance problems. The nominated Mentats are Mentat100 till Mentat111.
+1mar07|Mentat108 is online again (second time...)!
+2mar07|Mentat074 will be removed from the cluster on Tuesday 6 March to serve as desktop workstation. Please do not log in on this machine from Monday the 5th of March. Please remove/move your data of the /data partition.
+19mar07|upgrade: CTF 5.2.0 => 5.4.0, see /opt/ctf-5.4.0/doc/readme.v5.4.0-linux for changes. General info on http://intranet/cms/ctf.html.
+10apr07|On April 16th till April 19th there will be a Toolkit II (MEG) in the student room. Due to this course several Mentats (Mentat099 till Mentat111) are reserved for this Toolkit. Please do NOT use these Mentats on the 14th of Februari (till 13:00 PM) so the Toolkit-users will not be having performance problems. Also the usage of Matlab, Besa and Brainboyager will be limited during this Toolkit. Matlab will be used during the complete Toolkit. BrainVoyager and BESA licenses will be limited on Tuesday 17th.
+17apr07|Mentat075 will be removed from the cluster on Monday 23rd of April to serve as desktop workstation. Please do not log in on this machine on Monday the 23rd of April. Please remove/move your data of the /data partition.
+25apr07|Mentat076 and Mentat077 will be removed from the cluster on Monday 30 of April to serve as desktop workstations. Please do not log in on these machines on Monday the 23rd of April. Please remove/move your data of the /data partition.
+4may07|Mentat078 till Mentat094 will be removed from the cluster on Wednesday 9th of May to serve as desktop workstations. Please do not log in anymore on these machines. Please remove/move your data of the /data partition. (THE TG WILL NOT BE RESPONSIBLE FOR DATA LOSS). See intranetnews for more information.
+10may07|Since today our Mentat cluster has been upgraded with new Mentats. Mentat112 till Mentat136 are available and are ready to be abused with your calculation jobs. ;D
+30may07|Since today Matlab74 (Matlab 2007a) is available on the Mentat cluster.
+15jun07|Mathematica has been made available on Mentats last week. See /opt/mathematica on your mentat. Executables can be found in the Executables subdirectory. Some require an x-window, others do not. Licensing has been limited so you cannot use it all at the same time. Have fun, Martijn Pieffers 
+20jun07|The package FSL has been configured to start by typing in 'fsl'. Current fsl version is 3.3. 
+20jun07|The packages scopira/evident have been configured to start by typing 'scopira' or 'evident' respectively. Versions: scopira0.5 and evident0.9.11.
+13Jul07|On Wednesday 18th of July Mentat136 will be not available until the end of the day. The day after it should be back in the cluster again.
+24Jul07|Mentat095 will be removed from the cluster on Monday 13nd of August to serve as desktop workstations. Please log out and do not log in on these machines from Monday the 13nd of August. Please remove/move your data of the /data partition.
+14aug07|Mentat096 till Mentat105 will be removed from the cluster on Monday 20th of August to serve as desktop workstations. Please log out and do not log in on these machines from Monday the 20th of August. Please remove/move your data of the /data partition.
+15oct07|Mentat106 till Mentat110 will be remove from the cluster on Monday 22nd of Otcober. They be used as desktop workstations. Please log out and do not login on these machines from Monday 22nd of October. Please remove/move your data of the /data partition.
+22oct07|Mentat137 till Mentat149 have joined the Mentat Cluster!
+2oct07|Mentat137 will be unreachable due to a hardware problem. The machine will be available end Tuesday 23rd of October.
+31oct07|Installed Mricron (version beta 7 oct 2007). It's similar to Mrico, but it reads NIFTY (spm5) files. Start it up by typing 'mricron'. More info on http://www.sph.sc.edu/comd/rorden/mricron/.
+13dec07|Mentat111 will leave the cluster on monday the 17th of december. to serve as desktop workstation. Please (re)move your data to an other mentat and logout on the specific day
+17jan08|Mentat112 will leave the cluster on wednesday the 23rd of january tp serve as desktop workstation. Please (remove your data to an other mentat and logout on the day before.
+21jan08|The maximum number of concurrent matlab licensees is increased from 85 to 118. For the statistics toolbox the limit is increased from 8 to 12. (check intranet for more information)
+13feb08|On Wednesday 20th and 27th of februari (between 8:45-11:00hours) there will be a Neuroimaging II Course given by P.Indefrey. Therefore the Mentats Mentat113 till Mentat124 are reserved for this course on these days during the course. It will not be possible to login on these days during the hours mentioned. Also keep in mind that Matlab will be used so please try to clean up your unused matlab sessions.
+20feb08|Because of problems with VNC and remote desktop through ssh, we've reverted the ssh server configuration to the state of November 2007. When connecting to ssh.fcdonders.nl, you might get a message that "Someone is doing something nasty". We are sorry for that, but please ignore this message. For command line users: you can get rid of this message by deleting the appropiate lines in your known_hosts file (located in ~/.ssh/).
+25feb08|Some of us allready are using them but since last week the Mentat cluster has been upgraded with 11 more Mentats nodes. Today the official announcement. Now the Mentat cluster counts 53 nodes. Have fun on the new mentats.
+25feb08|After adding the new Mentats to our cluster, it is also time to say goodbye to some of the 'lower' mentats. Mentat113 till Mentat117 will leave the cluster on thursday morning 27th of march about 9:00. Please do not login on these machines on thursday morning and (re)move your data to an other Mentat. These Mentats will be reinstalled the same day to serve as desktop workstation.
+14apr08|Mentat161 has some problems and is temporary offline
+16apr08|Mentat118 till Mentat130 are reserved during the MEG Toolkit on April 21st till April 24th, between 8:00h-17:00h. Please finish your running jobs and continue your work on the higher Menntats. This to not interrupt the Toolkit courses.
+28apr08|Mentat118 will leave the cluster on Tuesday the 6th of May. This to make place for the new mentat nodes which have just arrived.
+8may08|On Monday 19th until the 22nd of May (between 8:00-17:00hours) there will be a fMRI Toolkit given. Therefore the Mentats Mentat119 till Mentat131 are reserved for this Toolkit on these days during the Toolkit. It will not be possible to login on these days during the hours mentioned.On Tuesday the licenses of BrainVoyager are used during the Toolkit from 12:00-17:00. Please do not use BrainVoyager during this time slot.
+16may08|Neuroimaging Course: During the following days the following number of Mentats are reserved for this coursei (Mentat119 till Mentat131). it will not be possible to use these Mentats (including Matlab) during the course (between 8:00 - 11:00)on the following dates 28-05, 04-06, 11-06, 25-06, 02-07.
+4jun08|On June the 12th there will be a BrainVision Analyzer demo given by Michiel van Elk. Due to this demo the usage of Analyzer will not be possible cause all the licenses are needed for the course. Please do not use any license during this demo session. The demo will be from 8:00am till 12:00.
+23jun08|Mentat119 till Mentat123 and Mentat161 will leave the cluster on Monday the 28rd of July at 11:00AM to serve as desktop workstation. Please (remove your data to an other mentat and logout on the day before. 
+29jul08|The number of simultaneous MATLAB sessions that you can use on the mentats during daytime has been increased from 3 to 4.
+5sep08|Mentat124 and Mentat125 will leave the cluster on Monday the 8th of September at 9:00AM to serve as desktop workstations. Please (remove your data to an other mentat and logout on the day before.
+10sep08|Mentat126 and Mentat127 will leave the cluster on Monday the 15th of September at 9:00AM to serve as desktop workstations. Please (remove your data to an other mentat and logout on the day before.
+9okt08|Mentat128 will leave the cluster on Monday the 13th of September at 9:00AM to serve as desktop workstations. Please (remove your data to an other mentat and logout on the day before.
+23oct08|SPM5 is updated to revision 1782; The beta version of SPM8 is available in /home/common/matlab/spm8b. More info on the SPM knowledge database page (http://intranet/cms/2556.html).
+2dec08|Mentat172 till mentat181 have been added to our mentat cluster. These machines are ready to be abused.
+3dec08|Mentat129 till Mentat132 will leave the cluster on Tuesday the 9th of December at 9:00AM to serve as desktop workstations. Please (re)move your data to an other mentat and logout on the day before.
+17dec08|Mentat133 till Mentat136 will leave the cluster on Monday the 22nd of December at 9:00AM to create some extra space in the serverroom for future mentats. Please (re)move your data to an other mentat and logout on the day before.
+8feb09|On 11-02-09 & 18-02-09 (from 8:15 till 12:00)  there will be a PET-Courde given by P. Indefrey. The following Mentasts are reserved for this course Mentat137 till mentat149. Also the usage of Matlab is not permitted on these Mentats. To not interfear the course students, please logout in time or the TG-staff will log you out on Wednesday morning. Thanks in advance. Kind regards, Marek
+11feb09|Installed mysql-client on all cluster nodes.
+9mar09|On 17-03-09 till 18-03-09 there will be a fMRI-Toolkit given. The following cluster nodes are reserved for this Toolkit: Mentat137 till mentat149. Also the usage of Matlab is not permitted on these Mentats. To not interfear the course students, please logout in time or the TG-staff will log you out in the morning morning. Also during the 17th of March the Usage of BrainVoyager is not possible. Please close all your BrainVoyager sessions in the morning of the 17th. Thanks in advance. Kind regards, Marek
+23mar09|Mentat137 till mentat138 will leave the cluster on Monday the 30st of March at 9:00AM to create some extra space in the serverroom for 2 extra mentats. Please (re)move your data to an other mentat and logout on the day before.
+31mar09|Mentat182 until mentat191 are added to the cluster. !!BEWARE these new mentats are installed with an new version of the operating system. Most of the software packages are tested and work fine on these machines, but if you run into problems, please contact the helpdesk!
+28apr09|On 04-05-09 & 07-05-09 (daily from 9:00 till 17:00) there will be a EEG/MEG toolkit given. The following Mentats are reserved for this Toolkit  Mentat139 till mentat151. The usage of Matlab is not permitted on these Mentats during the Toolkit hours. To not interfear the course students, please logout in time or the TG-staff will log you out on Monday morning (and the days after). Thanks in advance. Kind regards, Marek
+9apr09|On 13-05-09 & 20-05-09 (from 8:00 till 11:30) the following Mentats are reserved for the NeuroimagingII Toolkit. During these days  following Mentats are reserved for this Toolkit  Mentat139 till mentat151. The usage of Matlab is not permitted on these Mentats during the Toolkit hours. To not interfear the course students, please logout in time or the TG-staff will log you out in the  morning. After the 11:30 you are allow again to login.  Thanks in advance. Kind regards, Marek
+19may09|On monday 25th of May the Mentats139 till Mentat143 will leave the Mentat cluster at 9:00AM to serve as desktop workstations. Please (remove your data to an other mentat and logout on the day before.
+5jun09|Friday th of June FSL will be updated (between 3:00 - 5:00 pm). For questions contact Markus.Barth@donders.ru.nl
+16jun09|On monday 22th of June the Mentats144 till Mentat147 will leave the Mentat cluster at 9:00AM to serve as desktop workstations. Please (remove your data to an other mentat and logout on the day before(June 21st)
+25jun09|Mentat166 is back online again, it had some hardware issues. They seem to be solved now. TG
+13jul09|On monday 20st of July mentat148 until 49 will leave the cluster.
+12aug09|Mentat192 until mentat201 are added to the cluster. These machines are ready to be abused! If you enconter problems please contact the helpdesk!
+20aug09|Mentat150 until 154 left the cluster.
+7sep09|Mentat155 until 165  left the cluster.
+18sep09|On Monday 21st of September mentat166 and 167 will leave the cluster.
+18sep09|On Friday 25th of September mentat192 until 201 will be reinstalled.
+21sep09|Mentat202 until mentat220 are added to the cluster. These machines are ready to be abused! Note: Mentat220 is installed with an latest version of CentOS 5.3 (fully up2date) If you enconter problems please contact the helpdesk!
+25sep09|Mentat192 until 201 are reinstalled. You may abuse these machines!
+28sep09|There are some problems running R 2.2.5. For the moment, R 2.2.1 will be started when you type 'R'.
+30sep09|On Tuesday 6th of October at 9:00AM mentat168 until mentat172 will leave the cluster to serve as desktop system. Please (re)move your data to an other mentat and logout on the day before (5th of October).
+13oct09|On Monday 19th of October at 9AM mentat173 until mentat177 will leave the cluster to serve as desktop system. Please (re)move your data to an other mentat and logout on the day before (18th of October. Thanks in advance TG.
+13oct09|Mentat220 has been reinstalled with CentOS5.2. If you enconter problems please contact the helpdesk!
+20okt09|On Monday 26th of October at 9:00AM mentat178 will leave the cluster to serve as desktop system. Please (re)move your data to an other mentat and logout on the day before (25th of October).
+28oct09|Today, the 28th of october, we have installed some new cluster nodes! The following nodes are now availble: mentat221, mentat222, mentat223, mentat224, mentat225, mentat226, mentat227, mentat 228, mentat229, mentat230 and mentat231.
+30oct09| Matlab 2009b has been installed on /opt. run the command matlab79 to start this matlab version.
+02Nov09|We are going to reboot mentat004 tomorow at 10:00 AM.
+29jan10|On Wednesday 10 and 24th of February there will be a Neuroimaging Toolkit II (PET) given in the student room. Due to this course several Mentats (Mentat219 till Mentat231) are reserved for this Toolkit. Please do NOT use these Mentats on the 10th and 24th of February (till 12:00 PM) so the Toolkit-users will not be having performance problems. Matlab will be used during the complete Toolkit.
+2feb10|On Monday 8th of February at 9:00AM mentat179, 180 and 181 will leave the cluster to serve as desktop system. Please (re)move your data to an other mentat and logout on the day before (7th of February).
+08feb10|Today, the 8th of February, we have installed some new cluster nodes! The following nodes are now availble: mentat232  / 233 / 234. 
+11feb10|On Wednesday 17th of February at 8:00AM mentat001, 002 and 003 will be unavailable for max. 3 hours. They will be reinstalled with the same OS installed on all other Mentats. Please (re)move your data to an other mentat and logout on the day before (16th of February).
+26feb10|Installed ghostscript 8.71; to invoke it, use the following path /opt/ghostscript/bin/gs
+16mar10| On Monday 22nd of march Mentat182 till and with Mentat192 will leave the cluster to serve as desktop system. Please (re)move your data to an other mentat and logout on the day before (21th of March). TG.
+19mar10|On Tuesday 6th till and with 15th of February there will be fMRI Toolkits (fMRI) given in the student room. Due to this course several Mentats (Mentat222 till Mentat233) are reserved for during this Toolkit. Please do NOT use these Mentats on the 6th till and with the 15th of February (whole day) so the Toolkit-users will not be having performance problems. Matlab also will be used during the whole Toolkit. Check the INTRANET NEWS PAGE for more information. Thanks in advance. TG
+21apr10|On Thursday 29th of April Mentat230 till and with 234 will be temporary offline for maintenance (implementing VirtualGL support). During this maintenance it will not be possible to logon on these Mentat nodes. The maintenance will start from 9:00AM till 12:00PM. After the maintenance the mentats need to be rebooted. More information : https://intranet.donders.ru.nl/projectvirtualgl.html
+05aug10|We have installed some new cluster nodes! The following nodes are now availble: mentat235, mentat236, mentat237, mentat238, mentat239, mentat240, mentat241, mentat 242, mentat243, mentat244 and mentat245. Also these Mentats have an extra large amount of 12GB of internal Memory. Have fun!
+14sep10| On September 20th, mentat193 - mentat197 will leave the cluster.
+29sep10|On October 6th, mentat198 - mentat203 will leave the cluster. 
+7oct10|We have installed some new cluster nodes! The following nodes are now availble: mentat246, mentat247, mentat248, mentat249, mentat250, mentat251, mentat 252, mentat253, mentat254 and mentat255. Also these Mentats have an extra large amount of 12GB of internal Memory. Have fun!
+12oct10|On October 18th, mentat204 - mentat209 will leave the cluster.
+15oct10|On October 25th, mentat210 - mentat213 will leave the cluster.
+29oct10|Stephen contributed a new tool: martini. Martini tells you which cluster node to login to based on available memory. Usage: just type 'martini' and she will tell you which node to pick!
+02nov10|On Monday 8thd of November Mentat214 and Mentat215 will leave the cluster to serve as desktop system. Please (re)move your data to an other mentat and logout on the day before (7th of November).Thanks in advance TG. 
+10nov10|On Monday 15th of November Mentat216 till and with Mentat225 will leave the cluster to serve as desktop system. Please (re)move your data to an other mentat and logout on the day before (14th of November).Thanks in advance TG.
+10nov10|We have installed some new cluster nodes! The following nodes are now availble: mentat257, mentat258, mentat259, mentat260, mentat261, mentat262, mentat263, mentat264, mentat265, mentat266, mentat267, mentat268, mentat269. Also these Mentats have an extra large amount of 12GB of internal Memory. Have fun!
+16nov10|We have installed some new cluster nodes! The following nodes are now availble: mentat270, mentat271, mentat272, mentat273, mentat274. Also these Mentats have an extra large amount of 12GB of internal Memory. Have fun!
+30nov10|Installed R 2.12. It's now the current version when you start R. To start the previous version, type /opt/R.2.5/bin/R
+30nov10|On Monday 6th of December Mentat226, 227, 228, 229, 234, 235, 236, 237, 238, 239  will leave the cluster to serve as desktop system. Please (re)move your data to an other mentat and logout on the day before (5th of December).Thanks in advance TG.
+05jan11|We have installed some new cluster nodes! The following nodes are now availble: mentat275 t/m 288. Also these Mentats have an extra large amount of 12GB of internal Memory. Also these mentats can be used for 3D-rendering using VirtualGL and TurboVNC.Have fun!
+25jan11|On Monday 31st of Januari Mentat230, 231, 232, 233, 240 t/w 246 will  leave the cluster to serve as desktop system. Please (re)move your data to an other mentat and logout on the day before (30th of Januari ).Thanks in advance TG.
+01mar11|As of March 1st the PIM configuration has been loosened up a bit: the initial/notify/extend time are now 4/5/5 days for MATLAB and 7/7/14 days for Xvnc. That means that you will receive less emails from PIM. Please do close VNC and MATLAB sessions that you don't need any more.
+04mar11|From today Mentat005 is available for all 'certified mentat users'. Mentat005 is a special high memory Mentat with 49Gb Memory of RAM. Have fun! TG
+25mar11|We have installed some new cluster nodes! The following nodes are now availble: mentat289 t/m 299. Also these Mentats have an extra large amount of 12GB of internal Memory. Also these mentats can be used for 3D-rendering using VirtualGL and TurboVNC.Have fun!
+28mar11|On Friday 1st of april  Mentat247 t/w 255 will leave the cluster to serve as desktop system. Please (re)move your data to an other mentat and logout on the day before (30th of April ).Thanks in advance TG. 
+05apr11|There are new Mentats available. Mentat300 t/w mentat308. At this moment the machines  are reserved during the comming toolkits. Login is not possible on these machines during the toolkit, until further notification. In addidition mentat299 will be added to the reserved machines from next week. Thanks TG!
+08aug11|As some of you noticed allready Mentat006 + Mentat007 are added to our Mentat cluster. These machines are Very big memory nodes. They have 4x12Core CPUs (Yes 48Cores!) and 256GB of RAM! The access for these machines is restricted to the project group of Christian Beckmann and Robert Oostenveld. To get access to this machine please contact them. Regards, TG
+01sept11|On Friday the 5th of september  Mentat256 t/w 260 will leave the cluster to serve as desktop system. Please (re)move your data to an other mentat and logout on the day before (5th of April ).Thanks in advance TG!
+07sept11|On Monday the of 12th september  Mentat261 t/w 263 will leave the cluster to serve as desktop system. Please (re)move your data to an other mentat and logout on the day before (11th of April ).Thanks in advance TG!
+08sept11| On Monday the 12th of september Mentat068 and Mentat069 will leave our clluster. Please (re)move your data to an other mentat and logout on the day before (11th of April ).Thanks in advance TG!
+16sept11| On Wednesday the 21st of september Mentat 264 till and with  Mentat268 will leave our clluster. Please (re)move your data to an other mentat and logout on the day before (11th of April ).Thanks in advance TG!
+03oct11|We have installed some new cluster nodes! The following nodes are now availble: mentat309 t/w 322. Also these Mentats have an extra large amount of 12GB of internal Memory. Have fun!
+18oct11|Mentat319 t/w Mentat322 have restricted logon. They are being used for our cluster software test named Torque.
+31oct11|Access has been changed to mentatnodes. Password is now the same as your windows password ! If you can read this message if you login on a mentatnode, you used the correct one.
+04nov11|On Wednesday the 9th of November Mentat 269 till and with Mentat273 will leave our cluster. Please (re)move your data to an other mentat and logout on the day before (8th of November). Thanks in advance TG!
+28nov11|On Monday the 5th of December Mentat274 and Mentat275 will leave our cluster. Please (re)move your data to an other mentat and logout on the day before (6th of November). Thanks in advance TG
+24jan21|Since today Matlab 2011b is also available on the Mentat Cluster. Have fun!
+04Apr12|From the 10th April Mentat315 t/w Mentat318 will  have restricted logon. They will be used for our cluster software test named Torque.
+19Apr12|From April 19th (until further notice) Mentat315 t/w Mentat322 will have restricted logon.
+04May12|Mentat315 t/w Mentat322 have joined the cluster and are available for normal usage.
+30aug12|On Monday the 4th of September Mentat276 till and with Mentat280 will leave our cluster. Please (re)move your data to an other mentat and logout on the day before (3th of September). Thanks in advance TG
+07nov12|On Monday the 13th of December Mentat282 t/w  Mentat287 will leave our cluster. Please (re)move your data to an other mentat and logout on the day before (12th of November). Thanks in advance TG!
+15nov12|RESCHEDULE!! Due to a planning error the removal of Mentat281 t/w Mentat286 has been rescheduled to Friday 16th of November.Please (re)move your data to an other mentat and logout on the day before (12th of November). Thanks in advance TG!
+28nov12|On Wednesday the 5th of December Mentat287 t/w  Mentat293 will leave our cluster. Please (re)move your data to an other mentat and logout on the day before (4th of December). Thanks in advance TG!
+28nov12|On Friday the 7th of December Mentat294 t/w  Mentat300 will leave our cluster. Please (re)move your data to an other mentat and logout on the day before (6th of December). Thanks in advance TG!
+29Nov12|Mentat323 t/w Mentat333 have joined the cluster and are available for normal usage. Note these machines have CentOS6.2 installed. Have fun!
+30Nov12|On Tuesday, December 4th at 02.00PM, mentat001 will be replaced by a new system updated to CentOS 6.2. The system will be offline for approximately 2 hours. After the replacement/upgrade you will be able to reconnect to your running vnc-session as usual.
+30Nov12|On Wednesday, December 5th at 02.00PM, mentat002 will be replaced by a new system and updated to CentOS 6.2. Just like mentat001 this system will also be offline for approximately 2 hours. After the replacement/upgrade you will be able to reconnect to your running vnc-session as usual.
+05Dec12|Mentat334 t/w Mentat340 have joined the cluster and are available for normal usage. Note these machines have CentOS6.2 installed. Have fun!
+05Dec12|Mentat303 t/w Mentat312 will be reinstalled on Tuesday 11th of December. Please (re)move your data to an other mentat and logout on the day before (10th of September). Thanks in advance TG
+05Dec12|Mentat313 t/w Mentat322 will be reinstalled on Wednesday 12th of December. Please (re)move your data to an other mentat and logout on the day before (11th of September). Thanks in advance TG
+07Dec12|You can now directly start matlab on the torque cluster, just type matlab2012a-torque on any mentat or matlab2012a on mentat001-002
+07Dec12|The matlab_sub script can be used to run a single or multiple matlab scripts as a batch on torque, it now aks for memory and time
+07Dec12|Mentat341 t/w Mentat347 have joined the cluster and are availablefor normal usage. Note these machines have CentOS6.2 installed. Have fun!
+11Dec12|Mentat303 t/w Mentat312 are reinstalled and are rejoined to the Mentat cluster Note these machines have CentOS6.2 installed. Have fun!
+12Dec12|Mentat313 t/w Mentat322 are reinstalled and are rejoined to the Mentat cluster Note these machines have CentOS6.2 installed. Have fun!
+03Jan13|Use TurboVNC-viewer instead of TightVNC-viewer for better performance.
+17Jan13|You can run a TORQUE matlab session by simply adding '-torque' (without the qoutes) to your matlab-command (matlab2010b-torque)
+23jan13|As allready announced by the TG. Tomorrow Mentat323 t/w Mentat347 are being reinstalled and are rejoined to TORQUE cluster on the 24th of Januari. Please (re)move your data to an other mentat and logout on the 23 of Januari). Thanks in advance TG
+06mar13|On Monday the 11th of March Mentat303 t/w Mentat308 will leave our cluster. Please (re) move your data to an other mentat and logout on the day before (10th of March). Thanks in advance TG!
+23Apr13|On Monday the 29th of April Mentat313 t/w Mentat322 will leave our cluster. Please (re) move your data to an other mentat and logout on the day before (28th of April). Thanks in advance TG! !!! New Mentat's will be put into place the same moment. Mentat200 t/w Mentat209!   Thanks in advance TG!
+29Apr13|Today we have installed Mentat200 t/w Mentat208. and joined the cluster and are available for normal usage. Have fun!
+06May13|Torque/maui frontend system mentat003 was added in addition to mentat001/002. Mentat003 still needs a memory upgrade to 32gb (available within 2 weeks). Mentat003 runs CentOS 6.4. Mentat001/002 will be upgraded to CentOS 6.4 as soon as possilble.
+21jun13|Mentat003 will be offline on Wednesday 26th of June for a memory upgrade. The maintance window will be from 8-9am. Users who have a VNC session running should start a new session after the maintenance is completed.
+26jun13|On Wednesday the 3rd  of July Mentat200 t/w Mentat202 will leave our cluster. Please (re) move your data to an other mentat and logout on the day before (2nd of July). Thanks in advance TG!  Thanks in advance TG!
+08Aug13|Mentat002 and mentat003 installed with the latest CentOS updates. A reboot is required. Scheduled a reboot on August 9th, 5am
+09Dec13|Introduction of two new graphical cluster info scipts. Start !/opt/cluster/cluster-walltimeinfo or !/opt/cluster/cluster-meminfo in your interactive matlab session for a graphical window with walltime and/or memory info. You can also put these commands in matlab startup.m-file.
+20Jan14|On Wednesday, Jan 22 at 5 am mentat003 will go down for reboot.
+30Jan14|Introduce new utility script (cluster-status) to show current status (e.g. resource capacity, availability) of all compute nodes in the Torque/maui cluster.
+19Jan15|Access node mentat003 crashed. Reboot at 8.15 AM, Mon. Jan. 19th, 2015.
+03Jun15|Introduce Moab's job inspection tool: the 'checkjob' command-line tool. It is handy for users to inspect torque jobs in the cluster, in particular knowing reasons causing jobs not started immediately. The tool is available in a newly opened shell/terminal. See its usage via the command: 'man checkjob'.
+17Jun15|Matlab R2015a is available in the cluster. To start it, use the command 'matlab2015a'.
+30Sep15|Matlab R2015b is available in the cluster. To start it, use the command 'matlab2015b'.
+09Oct15|Cluster downtime scheduled for Wednesday, October 21st, 2015.
+15Mar16|Cluster and central storage downtime between 23h March 21st (Monday) and 12h March 22nd (Tuesday), 2016.
+01Nov16|Matlab R2016a is available in the cluster. To start it, use the command 'matlab2016a'.
+09Dec16|Matlab R2016b is available in the cluster. To start it, use the command 'matlab2016b'.
+14Dec16|Cluster downtime scheduled for January 2nd, 2017. Mentats (access nodes) will be upgraded
+14Feb17|Improved way to start rstudio as an interactive torque job. Run rstudio from the command line and follow the instructions.
+10Apr17|Matlab R2017a is available in the cluster. To start it, use the command 'matlab2017a'.
+07Jun17|To reduce load on the access nodes new wrapper-scripts were introduced to start a torque job for matlab, FSL, spyder, jupyter-notebook, Melodic and freeview.
+02Oct17|Matlab R2017b is available in the cluster. To start it, use the command 'matlab2017b'.
+10Nov17|Due to persistent problems regarding the torque hpc-cluster the "keep completed jobs"-time is reduced from 12 hours to 1 hour. Contact helpdesk if any issues occur.
+15Jun18|On Thursday evening June 28th between 19PM and 21PM all network services for DCCN will be (partially) interrupted due to a planned upgrade of the 10GbE network in our server room.
+24Jul18|HPC Cluster down due to cluster software upgrade and OS upgrade of the complete HPC cluster and cluster access nodes on Monday, August 6, 2018
+08Apr19|Re-installation of cluster access-nodes mentat001/005 on Tuesday, April 9th 2019, between 7:00 and 10:00 AM.
+05Jun19|Introduction of hpcutil. A new cluster information utility. Type hpcutil -h for more info.
+16Dec19|Disk monitoring is now enabled on the HPC cluster. You can enter your required (local node) diskspace as a resource requirement by: -l file=. This way your job will end on a node with the requested free diskspace. Example: qsub -I -l walltime=01:00:00,mem=8gb,file=1800gb. More info: hpc.dccn.nl, The HPC cluster, Using the cluster, Torque cluster, Specifying resource requirement.
+14dec21|Three new HPC execution hosts, with 2 nvidia A100 GPU's each, were added to the DCCN HPC cluster.
+20Oct22|On November 23rd /data will be removed from the HPC cluster. If you have usecases making use of the /data directory, please contact the DCCN helpdesk to resolve it in a different way.
+09Mar23|On March 13th, between 8 and 10 am, mentat006 will be added as a new cluster access node.
+15Mar23|On March 20th, between 8 and 10 am, HPC accessnode mentat005 will be replaced. Please save your work and close any running programs before March 20, 8:00am.
+20Mar23|On March 27th, between 8 and 10 am, HPC accessnodes mentat003 and mentat004 will be replaced. Please save your work and close any running programs before March 27, 8:00am.
+27Mar23|On Monday, April 3rd, between 8 and 10 am, HPC accessnodes mentat001 and mentat002 will be replaced. Please save your work and close any running programs before April 3, 8:00am.
+15May23|Tuesday, May 16th, ALL DAY: DCCN IT Datacenter electrical infrastructure maintenance with large impact (complete shutdown) on all IT services at DCCN.
+12Mar24|For implementing a better computing resource management on the HPC access nodes, the TG is scheduling the following downtimes to reboot the mentat servers: - Monday, March 18, 6.00AM: mentat001 and mentat002 - Monday, March 25, 6.00AM: mentat003 and mentat004 - Monday, April 1, 6.00AM: mentat005 and mentat006 Estimated downtime will be between 30 minutes to 1 hour. After reboot you must re-setup your vnc-session.
+18Mar24|Our plan to reboot mentat access nodes on March 25 and April 1 is cancelled. So mentats003/004/005/006 will not be rebooted.
+19Aug25|Accessnode mentat001 will be upgraded for slurm only on Monday, August 25th.

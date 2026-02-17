@@ -1,0 +1,102 @@
+#!/bin/sh
+
+# ==============================
+# add metric for vnc servers in use
+# ==============================
+#ps --no-heading -fC Xvnc| sort -t":" -k 4,4n |awk '{printf("%s%s ", $1, $9)}' |sed 's/ $/\n/' | while read vncservers
+
+vnccount=$(ps --no-heading -fC Xvnc |wc -l) 
+
+if [ $vnccount -eq 0 ]
+then
+	gmetric --value="Currently no VNC servers registered"  --name=vncservers --type=string
+else
+
+ps --no-heading auwx | grep Xvnc | grep -v "grep" | awk -F" " '{ print $1" " $12 }' | sort -t":" -k2,2n | awk '{printf("%s%s ", $1, $2)}' |sed 's/ $/\n/' | while read vncservers
+do
+	#listen carefully, I will loop this eunly wence
+	# org: gmetric --value="$vncservers"  --name=vncservers --type=string
+        
+	#gmetric xml string can only contain 1024 chars
+        #still error, set maximum to first 75.... (was 80)
+	declare -a nrvncs=( `ps --no-heading auwx | grep Xvnc | grep -v "grep" | awk -F" " '{ print $1" " $12 }' | sort -t":" -k2,2n | awk '{printf("%s%s ", $1, $2)}' |sed 's/ $/\n/'`)
+	#if too many vncsessions only list the first 75....
+	if (( `echo ${#nrvncs[@]}` >= 75 )); then
+		maxstr=${nrvncs[@]:0:75}
+		nrrest=`echo ${#nrvncs[@]} - 75 | bc -l`
+		vncservers="$maxstr... and $nrrest more."
+	fi
+	gmetric --value="${vncservers}"  --name=vncservers --type=string
+done
+
+fi
+
+
+#also add count
+gmetric --value="$vnccount" --type=uint16 --name="vnccount"
+
+
+# ==============================
+# add metric for number of users
+# ==============================
+numusers=$(who |wc -l)
+gmetric --value="$numusers"  --name=users --type=uint16
+
+# ==============================
+# martini index (===== DEPRECATED ===== )
+#
+# Martini is a score based on available cpu time and free memory
+# and can be used to decide which cluster node to login to
+#
+# The score ranges from 0 - 20:
+# 0 = Good ;-) Lots of CPU and memory available
+# 20 = Bad ;-( Don't disturb this node
+# ==============================
+#numusers=$(who |wc -l)
+#numproc=$(grep -c processor  /proc/cpuinfo)
+#memtotal=$(awk '/MemTotal/ {print $2}' /proc/meminfo) #Kb
+#memfree=$(awk '/MemFree/ {print $2}' /proc/meminfo) #Kb
+#load5=$(awk '{print $2}' /proc/loadavg)
+#martini=$( awk -vnumcpu=$numproc -vmemtotal=$memtotal -vmemfree=$memfree -vload5=$load5 'BEGIN {		
+#		# loadscore = 10 - (fraction of cpus in use)
+#		#
+#		# range: 0 - 10
+#		#
+#		if (load5 >= numcpu) {
+#			loadscore = 0
+#		} else {
+#			loadscore = 10 - (load5/numcpu *10)
+#		}
+#		
+#		# memory score (range 0 - 10
+#		memscore  = 10 * memfree / memtotal
+#		
+#		print 20 - (loadscore + memscore)
+#}'
+#)
+#gmetric --dmax=70 --value="$martini"  --name=martini --type=float
+
+
+#quick reference for gmetric:
+#ganglia-monitor-core 2.5.6
+#
+#Purpose:
+#  The Ganglia Metric Client (gmetric) announces a metric
+#  value to all Ganglia Monitoring Daemons (gmonds) that are listening
+#  on the cluster multicast channel.
+#
+#Usage: ganglia-monitor-core [OPTIONS]...
+#   -h         --help                  Print help and exit
+#   -V         --version               Print version and exit
+#   -nSTRING   --name=STRING           Name of the metric
+#   -vSTRING   --value=STRING          Value of the metric
+#   -tSTRING   --type=STRING           Either string|int8|uint8|int16|uint16|int32|uint32|float|double
+#   -uSTRING   --units=STRING          Unit of measure for the value e.g. Kilobytes, Celcius
+#   -sSTRING   --slope=STRING          Either zero|positive|negative|both (default='both')
+#   -xINT      --tmax=INT              The maximum time in seconds between gmetric calls (default=60)
+#   -dINT      --dmax=INT              The lifetime in seconds of this metric (default=0)
+#   -cSTRING   --mcast_channel=STRING  Multicast channel to send/receive on (default='239.2.11.71')
+#   -pINT      --mcast_port=INT        Multicast port to send/receive on (default=8649)
+#   -iSTRING   --mcast_if=STRING       Network interface to multicast on e.g. 'eth1' (default='kernel decides')
+#   -lINT      --mcast_ttl=INT         Multicast Time-To-Live (TTL) (default=1)
+#

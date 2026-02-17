@@ -1,0 +1,39 @@
+#!/bin/sh
+
+# 20110715 HINTS_FILE=/home/common/intranet_attachments/system-files/linux-hints
+HINTS_FILE=$CLUSTER_UTIL_ROOT/system-files/linux-hints
+while getopts "e" option
+do
+        case $option in
+                e )
+		vi $HINTS_FILE
+	esac
+done
+
+# definition of table function
+table() {
+    FIELD_SEPARATOR=$1
+
+        awk -F"$FIELD_SEPARATOR" ' 
+        BEGIN { print "<table border=0>" } 
+        { 
+        x=1
+        print"<tr valign=top>"
+                while ( x <= NF ) {
+            if ( x == 1) print "\t <td align=right>" $x "</td>"
+            else print  "\t <td>" $x "</td>"
+                        ++x
+                        } 
+                print "</tr>"
+        } 
+        END { 
+                print "</table>"
+        }' | links -dump -dump-width 83 |  sed 's/^   //'
+}
+
+
+cat $HINTS_FILE | \
+    sort | \
+	table "|"
+
+exit 0

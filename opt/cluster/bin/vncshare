@@ -1,0 +1,34 @@
+#!/bin/sh
+# script to change your vnc password temporary in order to share the vnc session with
+# a colleague
+
+# for how long should the password be changed (seconds)
+PWTIMEOUT=30
+
+# backup password
+mv ~/.vnc/passwd ~/.vnc/oldvncpasswd
+
+# make sure the password is restored when the program exits
+trap 'mv ~/.vnc/oldvncpasswd ~/.vnc/passwd; echo vncpassword restored...' EXIT
+
+# write temporary password 'helpme'
+for OCTALBYTE in 145 151 142 201 056 243 032 130
+do
+	echo -n -e \\$OCTALBYTE
+done > ~/.vnc/passwd
+
+
+# wait and show a gauge dialog before we restore the original password
+COUNT=$PWTIMEOUT
+(
+while test $COUNT != 0
+do
+	echo `expr 100 \* $COUNT / $PWTIMEOUT`
+	echo "XXX"
+	echo "For the following $COUNT seconds, your VNC password will be 'helpme'. Please instruct your colleague to use this password to connect to your vncserver session. Just wait or abort (using ctrl+c) to revert back to your original password.\nYour colleage can share the vnc session until he or she closes his / her vncviewer window."
+	echo "XXX"
+	COUNT=`expr $COUNT - 1`
+	sleep 1
+done
+) | dialog --title "VNCSHARE" --gauge "this is some text" 13 70 0
+
