@@ -1,0 +1,70 @@
+#!/bin/bash
+
+function human_readable_size() {
+
+    s=$1
+
+    [ ${#s} -gt 12 ] && echo "$(( s / 1000000000000 ))T" && return 0
+    [ ${#s} -gt 9  ] && echo "$(( s / 1000000000 ))G"    && return 0
+    [ ${#s} -gt 6  ] && echo "$(( s / 1000000 ))M"       && return 0
+    [ ${#s} -gt 3  ] && echo "$(( s / 1000 ))K"          && return 0
+
+    echo ${s} && return 0
+}
+
+function human_readable_count() {
+
+    s=$1
+
+    [ ${#s} -gt 12 ] && echo "$(( s / 1000000000000 ))T" && return 0
+    [ ${#s} -gt 9  ] && echo "$(( s / 1000000000 ))B"    && return 0
+    [ ${#s} -gt 6  ] && echo "$(( s / 1000000 ))M"       && return 0
+    [ ${#s} -gt 3  ] && echo "$(( s / 1000 ))K"          && return 0
+
+    echo ${s} && return 0
+}
+
+# total size in bytes
+function get_size_bytes() {
+    n=$(getfattr --only-values -P -d -n ceph.dir.rbytes $1 2>/dev/null)
+    [ -z $n ] && return 1
+    human_readable_size $n
+}
+
+# total size in number of files 
+function get_size_nfiles() {
+    n=$(getfattr --only-values -P -d -n ceph.dir.rfiles $1 2>/dev/null)
+    [ -z $n ] && return 1
+    human_readable_count $n
+}
+
+# total size in number of directories
+function get_size_ndirs() {
+    n=$(getfattr --only-values -P -d -n ceph.dir.rsubdirs $1 2>/dev/null)
+    [ -z $n ] && return 1
+    human_readable_count $(( n - 1 ))
+}
+
+# get quota 
+function get_quota_bytes() {
+    n=$(getfattr --only-values -P -d -n ceph.quota.max_bytes $1 2>/dev/null)
+    [ -z $n ] && return 1
+    human_readable_size $(( n - 1 ))
+}
+
+function get_cephfs_usage() {
+    nbytes=$(get_size_bytes $1)
+    nfiles=$(get_size_nfiles $1)
+    ndirs=$(get_size_ndirs $1)
+    quota=$(get_quota_bytes $1)
+
+    printf "%5s\t%5s\t%5s\t%5s\t%s\n" "$quota" "$nbytes" "$nfiles" "$ndirs" "$1"
+}
+
+[ $# -lt 1 ] && echo "usage: $0 dir1 [dir2 ...]" && exit 1
+
+printf "%5s\t%5s\t%5s\t%5s\t%s\n" "Quota" "Usage" "Files" "Dirs" "Path"
+#printf "Quota\tUsage\tFiles\tDirs\tPath\n" "$quota" "$nbytes" "$nfiles" "$ndirs" "$1"
+for dir in $@; do
+    ls $dir > /dev/null && get_cephfs_usage $dir || continue;
+done
