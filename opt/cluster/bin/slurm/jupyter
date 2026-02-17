@@ -1,0 +1,39 @@
+#!/bin/bash
+#
+# 20170217 edwger: initial script to redirect jupyter if not notebook arg
+#
+
+usage(){
+   echo "Usage: $0 [-h] [--version] [--config-dir] [--data-dir] [--runtime-dir]
+               [--paths] [--json]
+               [subcommand]
+jupyter: error: one of the arguments --version subcommand --config-dir --data-dir --runtime-dir --paths is required"
+   exit 1
+}
+
+if (( $# < 1 )); then
+   usage
+fi
+
+if [[ $( hostname -s ) =~ mentat[0-9]+ ]]; then
+    case "$1" in
+        notebook)
+           /opt/cluster/bin/slurm/jupyter-notebook
+           ;;
+        lab)
+           /opt/cluster/bin/slurm/jupyter-lab
+           ;;
+        *)
+           echo "Running Jupyter interactively on an access node is not allowed." >&2 && exit 1
+           ;;
+    esac
+else
+    jupyter_bin=$( which jupyter | grep -v /opt/cluster/bin )
+
+    [ $? -ne 0 ] &&
+       echo -e "Command jupyter \033[31mFAILED\033[0m!" &&
+       echo Make sure module is loaded. &&
+       exit 1
+  
+    $jupyter_bin $@
+fi
