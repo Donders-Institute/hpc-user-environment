@@ -52,6 +52,8 @@
 # 26jun2017 - edwger: Do not reload module if selected module is already loaded
 # 10jul2018 - edwger: added support for mentat005 as torque frontend
 # 14feb2023 - edwger: added support for mentat006 as torque frontend
+# 18feb2026 - honlee: removed if-conditions only relevant to TORQUE
+# 18feb2026 - honlee: removed allowance check with `matlabXX-check`
 #
 
 function get_script_dir() {
@@ -114,8 +116,6 @@ else
     fi
 fi
 
-#echo "will start $MATLAB_MODULE ..."
-
 # use the short hostname
 HOSTNAME=`hostname -s`
 
@@ -124,142 +124,107 @@ HOSTNAME=`hostname -s`
 # MATLAB uses either a single thread  or all threads in a machine
 # Torque expects MATLAB to use a single thread, hence this option
 ##############################################################################
-if [ -z "$PBS_O_QUEUE" ]; then
-    # the following section applies to all normal mentats, including 001, 002,
-    # 003, 004, 005 and 006. It does not apply to the torque execution hosts
 
-    TORQUEREQUEST=$(basename $0 | grep torque)
-    NOX11TUNNEL=$(basename $0 | grep noX11tunnel)
-    ACCESSNODE=$(echo $HOSTNAME | egrep 'mentat(001|001c|002|002c|003|004|005|006|007|999)')
-    TOOLKITNODE=$(echo $HOSTNAME | egrep 'mentat001c')
+NOX11TUNNEL=$(basename $0 | grep noX11tunnel)
+ACCESSNODE=$(echo $HOSTNAME | egrep 'mentat[0-9]+(c)?')
 
-    if [ -n "$ACCESSNODE" -o -n "$TOOLKITNODE" -o -n "$TORQUEREQUEST" ]; then
-        # The following section applies only torque access nodes, toolkits nodes and initiates
-        # a torque/maui-job started on one of the torque execution hosts
+if [ -n "$ACCESSNODE" ]; then
+    # The following section applies only HPC access nodes and toolkit nodes
 
-        # Call the rem_walltime function and use the var remaining_walltime below in the
-        # dialog to the user.
-        remaining_walltime=`rem_walltime`
+    # Call the rem_walltime function and use the var remaining_walltime below in the
+    # dialog to the user.
+    remaining_walltime=`rem_walltime`
 
-        if [ -z $DISPLAY ]; then
-            # Exit with error-message if display variable is not set
-            echo " "
-            echo "No DISPLAY variable set!"
-            echo "A DISPLAY setting is required to run Matlab."
-            echo " "
-            echo "You can try to open a new terminal and check your"
-            echo "DISPLAY from the command line with:"
-            echo "$ echo \$DISPLAY"
-            echo " "
-            echo "For more info see:"
-            echo "https://intranet.donders.ru.nl/index.php?id=3832"
-            echo " "
-            exit 0
-        fi
-
-        # Get Torque arguments -r or -x, if incorrect exit
-        MATLAB_ARGUMENTS=""
-        if [ $# -gt 0 ]; then
-            if [[ $1 == -* ]]; then
-                while getopts r:x option; do
-                    case "${option}" in
-                        r) MATLAB_ARGUMENTS="${OPTARG}";;
-                        x) IMMEDIATE_EXECUTE=TRUE;;
-                        ?) echo "Unexpected matlab input argument, only -r option is allowed."; exit 1;;
-                    esac
-                done
-            else
-                echo "Unexpected matlab input argument, only -r option is allowed."
-                exit 1
-            fi
-        fi
-
-	#echo $IMMEDIATE_EXECUTE
-	if [ $IMMEDIATE_EXECUTE ]
-        then
-            #echo "here we should execute immediately!!!!"
-            echo
-            echo -e "\033[1mCongratulations dear researcher!\033[0m"
-            echo -e "\033[1mYou discovered our secret, undocumented, -x script argument! ;-)\033[0m"
-            echo
-            echo -e "By using the -x argument you automatically \033[1mFULLY agree\033[0m to all the choices"
-            echo "for jobname, walltime and memory made for you by the DCCN TG!"
-            echo
-            echo "As an extra bonus for well done research discovering this secret"
-            echo -e "option you will get an \033[1mEXTRA\033[0m GigaByte of memory ;-)!"
-            echo
-            echo -e "Happy matlabbing... and \033[1mPSSST, don't tell anyone...\033[0m"
-            echo
-
-            make_display
-            module load $MATLAB_MODULE
-
-            WALLTIME=`rem_walltime`
-            MEM="4gb"
-            name_guiapp="MATLAB"
-            trq_queue="interactive"
-            MATLABCMD="$MATLAB_BIN -desktop -singleCompThread -display $DISPLAY"
-            #MATLABCMD="/opt/cluster/bin/slurm/yadjobinfo-slurm $MATLAB_BIN -desktop -singleCompThread -display $DISPLAY"
-            if [ ! -z "$MATLAB_ARGUMENTS" ]
-            then
-                echo Running matlab script: $MATLAB_ARGUMENTS
-                MATLABCMD="$MATLAB_BIN -desktop -singleCompThread -r $MATLAB_ARGUMENTS -display $DISPLAY"
-                #MATLABCMD="/opt/cluster/bin/slurm/yadjobinfo-slurm $MATLAB_BIN -desktop -singleCompThread -r $MATLAB_ARGUMENTS -display $DISPLAY"
-            fi
-
-            RESRC_REQUIREMENT="--nodes=1 --ntasks-per-node=1 --x11 --mem=$MEM --time=$WALLTIME"
-
-            #echo "DCCN_MOD_DIR=$DCCN_MOD_DIR"
-            #echo "MATLAB_MODULE=$MATLAB_MODULE"
-	    #echo "MATLAB_BIN=$MATLAB_BIN"
-            #echo "MATLAB_ARGUMENTS=$MATLAB_ARGUMENTS"
-            #echo "DISPLAY=$DISPLAY"
-            #echo "walltime=$WALLTIME"
-            #echo "mem=$MEM"
-            #echo "name_guiapp=$name_guiapp"
-            #echo "trq_queue=$trq_queue"
-
-            echo
-            echo Requesting immediate interactive MATLAB torque job using:
-
-            echo "source $DCCN_MOD_DIR/setup.sh; module load $MATLAB_MODULE; $MATLABCMD"
-
-            echo
-            echo -e "\033[1mSubmitting job for interactive $name_guiapp session ... \033[0m"
-
-            echo "srun ${KEEPOE} --job-name=${name_guiapp} ${RESRC_REQUIREMENT} --partition=$trq_queue $cmd_guiapp ${MATLABCMD}"
-            srun ${KEEPOE} --job-name=${name_guiapp} ${RESRC_REQUIREMENT} --partition=$trq_queue $cmd_guiapp
-
-            exit 0
-        fi
-
-        $CLUSTER_UTIL_ROOT/bin/slurm/matlab-slurm-menu $MATLAB_MODULE $MATLAB_ARGUMENTS
+    if [ -z $DISPLAY ]; then
+        # Exit with error-message if display variable is not set
+        echo " "
+        echo "No DISPLAY variable set!"
+        echo "A DISPLAY setting is required to run Matlab."
+        echo " "
+        echo "You can try to open a new terminal and check your"
+        echo "DISPLAY from the command line with:"
+        echo "$ echo \$DISPLAY"
+        echo " "
         exit 0
-
-    elif [ -n "$NOX11TUNNEL" ]; then
-
-        # try to circumvent the tunneling of X11 over ssh
-
-        if  [ "XX$SSH_CLIENT" = "XX" ]; then
-            echo "Unable to detect ssh client origin"
-            exit 1
-        else
-            IP=`echo "$SSH_CLIENT" | cut -d " " -f 1`
-            DISPLAYOPTIONS=" -display $IP:0 "
-            TORQUEOPTIONS=""
-        fi
-
-    else
-        # nothing special was requested
-        TORQUEOPTIONS=""
-        DISPLAYOPTIONS=""
     fi
 
-elif [ "$PBS_ENVIRONMENT" = "PBS_BATCH" ]; then
-    TORQUEOPTIONS=" -singleCompThread -nodisplay "
+    # Get Torque arguments -r or -x, if incorrect exit
+    MATLAB_ARGUMENTS=""
+    if [ $# -gt 0 ]; then
+        if [[ $1 == -* ]]; then
+            while getopts r:x option; do
+                case "${option}" in
+                    r) MATLAB_ARGUMENTS="${OPTARG}";;
+                    x) IMMEDIATE_EXECUTE=TRUE;;
+                    ?) echo "Unexpected matlab input argument, only -r option is allowed."; exit 1;;
+                esac
+            done
+        else
+            echo "Unexpected matlab input argument, only -r option is allowed."
+            exit 1
+        fi
+    fi
 
-elif [ "$PBS_ENVIRONMENT" = "PBS_INTERACTIVE" ]; then
-    TORQUEOPTIONS=" -singleCompThread "
+    if [ $IMMEDIATE_EXECUTE ]; then
+        #echo "here we should execute immediately!!!!"
+        echo
+        echo -e "\033[1mCongratulations dear researcher!\033[0m"
+        echo -e "\033[1mYou discovered our secret, undocumented, -x script argument! ;-)\033[0m"
+        echo
+        echo -e "By using the -x argument you automatically \033[1mFULLY agree\033[0m to all the choices"
+        echo "for jobname, walltime and memory made for you by the DCCN TG!"
+        echo
+        echo "As an extra bonus for well done research discovering this secret"
+        echo -e "option you will get an \033[1mEXTRA\033[0m GigaByte of memory ;-)!"
+        echo
+        echo -e "Happy matlabbing... and \033[1mPSSST, don't tell anyone...\033[0m"
+        echo
+
+        make_display
+        module load $MATLAB_MODULE
+
+        WALLTIME=`rem_walltime`
+        MEM="4gb"
+        name_guiapp="MATLAB"
+        trq_queue="interactive"
+        MATLABCMD="$MATLAB_BIN -desktop -singleCompThread -display $DISPLAY"
+        if [ ! -z "$MATLAB_ARGUMENTS" ]
+        then
+            echo Running matlab script: $MATLAB_ARGUMENTS
+            MATLABCMD="$MATLAB_BIN -desktop -singleCompThread -r $MATLAB_ARGUMENTS -display $DISPLAY"
+        fi
+
+        RESRC_REQUIREMENT="--nodes=1 --ntasks-per-node=1 --x11 --mem=$MEM --time=$WALLTIME"
+
+        echo
+        echo Requesting immediate interactive MATLAB torque job using:
+
+        echo "source $DCCN_MOD_DIR/setup.sh; module load $MATLAB_MODULE; $MATLABCMD"
+
+        echo
+        echo -e "\033[1mSubmitting job for interactive $name_guiapp session ... \033[0m"
+
+        echo "srun ${KEEPOE} --job-name=${name_guiapp} ${RESRC_REQUIREMENT} --partition=$trq_queue $cmd_guiapp ${MATLABCMD}"
+        srun ${KEEPOE} --job-name=${name_guiapp} ${RESRC_REQUIREMENT} --partition=$trq_queue $cmd_guiapp
+
+        exit 0
+    fi
+
+    $CLUSTER_UTIL_ROOT/bin/slurm/matlab-slurm-menu $MATLAB_MODULE $MATLAB_ARGUMENTS
+    exit 0
+
+elif [ -n "$NOX11TUNNEL" ]; then
+    # try to circumvent the tunneling of X11 over ssh
+    if  [ "XX$SSH_CLIENT" = "XX" ]; then
+        echo "Unable to detect ssh client origin"
+        exit 1
+    else
+        IP=`echo "$SSH_CLIENT" | cut -d " " -f 1`
+        DISPLAYOPTIONS=" -display $IP:0 "
+    fi
+else
+    # nothing special was requested
+    DISPLAYOPTIONS=""
 fi
 
 ##############################################################################
@@ -268,17 +233,11 @@ fi
 
 OTHEROPTIONS=$*
 
-# test whether the user is allowed to start another matlab session
-export LMSTAT="$CLUSTER_UTIL_ROOT/bin/lmstat -f MATLAB"
-
-# this line can be commented out to quickly disable the test completely
-$CLUSTER_UTIL_ROOT/bin/slurm/matlabXX-check || exit 1
-
 echo "Starting $MATLAB_MODULE"
 
 ## load proper matlab module to get MATLAB_BIN variable
 module unload matlab > /dev/null 2>&1
 module load $MATLAB_MODULE > /dev/null 2>&1
 
-echo Executing $MATLAB_BIN $TORQUEOPTIONS $DISPLAYOPTIONS $OTHEROPTIONS
-exec $MATLAB_BIN $TORQUEOPTIONS $DISPLAYOPTIONS $OTHEROPTIONS
+echo Executing $MATLAB_BIN $DISPLAYOPTIONS $OTHEROPTIONS
+exec $MATLAB_BIN $DISPLAYOPTIONS $OTHEROPTIONS
