@@ -2,6 +2,13 @@
 
 This repository contains essential wrapper scripts and shared module files located in the `/opt` directory on the DCCN HPC cluster.
 
+## Development
+
+For testing wrapper scripts in [`opt/cluster`](opt/cluster), one can run scripts via [test_run](test_run) to be sure the variables `$PATH` and `$CLUSTER_UTIL_ROOT` are set to the local directory.  For example,
+
+```bash
+$ ./test_run opt/cluster/bin/slurm/sbash
+```
 
 ## Deployment
 
