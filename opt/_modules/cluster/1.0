@@ -1,0 +1,19 @@
+#%Module1.0####################################################################### 
+##
+## cluster utility modulefile
+## 
+
+if { [module-info mode remove] } {
+    set name [module-info name]
+    puts stderr "Unloading is not allowed: $name"
+    break
+} else {
+
+    source $env(DCCN_MOD_DIR)/share/common.tcl
+
+    set version 1.0
+    set arch [get_sys_arch]
+    set osversion [get_redhat_version]
+
+    source [file join [file dirname $ModulesCurrentModulefile] common.tcl]
+}
