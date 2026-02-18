@@ -11,7 +11,7 @@ $ git clone git@github.com:Donders-Institute/hpc-user-environment.git
 $ cd hpc-user-environment
 ```
 
-Ccreate a new development branch before changing scripts (e.g. `bugfix-XYZ`):
+Create a new development branch before changing scripts (e.g. `bugfix-XYZ`):
 
 ```bash
 $ git branch bugfix-XYZ
