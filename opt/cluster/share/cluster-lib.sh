@@ -368,10 +368,10 @@ function run_guiapp() {
 
     echo
     echo -ne "\033[1mSubmitting job for interactive $name_guiapp session ... \033[0m"
-    echo "srun -Q ${KEEPOE} --mail-type=FAIL --job-name=${name_guiapp} ${RESRC_REQUIREMENT} --partition=$queue bash -c \"ulimit -v unlimited && export DISPLAY=${DISPLAY} && /opt/cluster/bin/slurm/yadjobinfo-slurm && $cmd_guiapp\""
+    echo "srun -Q ${KEEPOE} --mail-type=FAIL --job-name=${name_guiapp} ${RESRC_REQUIREMENT} --partition=$queue bash -c \"ulimit -v unlimited && export DISPLAY=${DISPLAY} && ${CLUSTER_UTIL_ROOT}/bin/slurm/yadjobinfo-slurm && $cmd_guiapp\""
     echo
 
-    srun -Q ${KEEPOE} --mail-type=FAIL --job-name=${name_guiapp} ${RESRC_REQUIREMENT} --partition=$queue bash -c "ulimit -v unlimited && export DISPLAY=${DISPLAY} && /opt/cluster/bin/slurm/yadjobinfo-slurm && $cmd_guiapp" &
+    srun -Q ${KEEPOE} --mail-type=FAIL --job-name=${name_guiapp} ${RESRC_REQUIREMENT} --partition=$queue bash -c "ulimit -v unlimited && export DISPLAY=${DISPLAY} && ${CLUSTER_UTIL_ROOT}/bin/slurm/yadjobinfo-slurm && $cmd_guiapp" &
 }
 
 #---------------------------------------------------------------------#
