@@ -87,6 +87,48 @@ function info(){
          secs=$wt_rem 
       fi
 
+      #####################################################
+      ### G E N E R A T E   E X T R A   W A R N I N G S ###
+      #####################################################
+
+      if [[ "$secs" == 3600 ]]
+      then
+         /bin/yad --title "JOBinfo for ${JOB%%.*}" \
+         --width=400 \
+         --height=120 \
+         --on-top \
+         --center \
+         --buttons-layout=center \
+         --text-align=center \
+         --fontname="Sans Bold 20" \
+         --text "Your job with jobID ${SLURM_JOBID}\n\nwill be terminated in <b>1 hour</b>" \
+         --button=yad-ok &
+      elif [[ "$secs" == 1800 ]]
+      then
+         /bin/yad --title "JOBinfo for ${JOB%%.*}" \
+         --width=400 \
+         --height=120 \
+         --on-top \
+         --center \
+         --buttons-layout=center \
+         --text-align=center \
+         --fontname="Sans Bold 20" \
+         --text "Your job with jobID ${SLURM_JOBID}\n\nwill be terminated in <b>30 minutes</b>" \
+         --button=yad-ok &
+      elif [[ "$secs" == 300 ]]
+      then
+         /bin/yad --title "JOBinfo for ${JOB%%.*}" \
+         --width=400 \
+         --height=120 \
+         --on-top \
+         --center \
+         --buttons-layout=center \
+         --text-align=center \
+         --fontname="Sans Bold 20" \
+         --text "Your job with jobID ${SLURM_JOBID}\n\nwill be terminated in <b>5 minutes</b>" \
+         --button=yad-ok &
+      fi
+
       #############################################
       ### S E T T I N G S   F O R   M E M O R Y ###
       #############################################
