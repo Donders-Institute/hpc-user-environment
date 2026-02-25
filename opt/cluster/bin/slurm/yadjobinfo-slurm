@@ -59,23 +59,30 @@ function info(){
       # the walltime progress bar percentage is no longer 
       # correct.
       echo $wt_list      
-new_wt_list=$(squeue -j $SLURM_JOB_ID -h --Format TimeLimit)
-echo $new_wt_list
-
-# Convert ##:##:## notification to seconds
-# squeue displays time as ##:##:##, ##:## !!!DEFAULT IS MINUTES!!!
-# secs must be calculated accordingly by counting number of colons
-# ##:##:## has two colons, ##:## has one !!!MINIMUM IS ALWAYS ONE!!!
-#if [ $(echo $wt_list | grep "-") ]
-#then
-#   export wt_list_secs=$(echo $wt_list | awk -F: '{ print ($1 * 24 * 3600) + ($2 * 60) + $3 }')
-#elif [ $(echo $wt_list | awk -F\: '{print NF-1}') -eq "2" ]
-#then
-#   export wt_list_secs=$(echo $wt_list | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }')
-#else
-#   export wt_list_secs=$(echo $wt_list | awk -F: '{ print ($1 * 60) + $2 }')
-#fi
-      
+      ck_nw_wt_list=$(squeue -j $SLURM_JOB_ID -h --Format TimeLimit)
+      echo $ck_nw_wt_list
+      if [[ "$wt_list" != "$ck_nw_wt_list" ]]
+      then
+         # Convert ##:##:## notification to seconds
+         # squeue displays time as ##:##:##, ##:## !!!DEFAULT IS MINUTES!!!
+         # secs must be calculated accordingly by counting number of colons
+         # ##:##:## has two colons, ##:## has one !!!MINIMUM IS ALWAYS ONE!!!
+         if [ $(echo $ck_nw_wt_list | grep "-") ]
+         then
+            export nw_wt_list_secs=$(echo $ch_nw_wt_list | awk -F: '{ print ($1 * 24 * 3600) + ($2 * 60) + $3 }')
+            STARTSECS=$nw_wt_list_secs
+         elif [ $(echo $ck_nw_wt_list | awk -F\: '{print NF-1}') -eq "2" ]
+         then
+            export nw_wt_list_secs=$(echo $ck_nw_wt_list | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }')
+            STARTSECS=$nw_wt_list_secs
+         else
+            export nw_wt_list_secs=$(echo $ck_nw_wt_list | awk -F: '{ print ($1 * 60) + $2 }')
+            STARTSECS=$nw_wt_list_secs
+         fi
+      # Update wt_list with the new value of ch_nw_wt_list to prevent
+      # running if condition over and over again
+      export wt_list=$ck_nw_wt_list 
+      fi
 
       # Settings for seconds adjustments in remaining walltime
       wt_rem=$(squeue --jobs $SLURM_JOB_ID -o "%L" | sed '1d')
