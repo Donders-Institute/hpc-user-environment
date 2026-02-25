@@ -53,6 +53,29 @@ function info(){
       #################################################
       ### S E T T I N G S   F O R   W A L L T I M E ###
       #################################################
+      
+      # Keep checking the initial walltime request
+      # It might change after walltime extension and then
+      # the walltime progress bar percentage is no longer 
+      # correct.
+      echo $wt_list      
+new_wt_list=$(squeue -j $SLURM_JOB_ID -h --Format TimeLimit)
+echo $new_wt_list
+
+# Convert ##:##:## notification to seconds
+# squeue displays time as ##:##:##, ##:## !!!DEFAULT IS MINUTES!!!
+# secs must be calculated accordingly by counting number of colons
+# ##:##:## has two colons, ##:## has one !!!MINIMUM IS ALWAYS ONE!!!
+#if [ $(echo $wt_list | grep "-") ]
+#then
+#   export wt_list_secs=$(echo $wt_list | awk -F: '{ print ($1 * 24 * 3600) + ($2 * 60) + $3 }')
+#elif [ $(echo $wt_list | awk -F\: '{print NF-1}') -eq "2" ]
+#then
+#   export wt_list_secs=$(echo $wt_list | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }')
+#else
+#   export wt_list_secs=$(echo $wt_list | awk -F: '{ print ($1 * 60) + $2 }')
+#fi
+      
 
       # Settings for seconds adjustments in remaining walltime
       wt_rem=$(squeue --jobs $SLURM_JOB_ID -o "%L" | sed '1d')
