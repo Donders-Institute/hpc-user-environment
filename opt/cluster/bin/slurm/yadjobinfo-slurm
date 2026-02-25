@@ -112,7 +112,7 @@ function info(){
          secs=$(echo $wt_rem | awk -F\: '{ print ($1 * 3600) + ($2 * 60) + $3 }')
       elif [ $(echo $wt_rem | awk -F\: '{print NF-1}') -eq "1" ]
       then
-	 secs=$(echo $wt_rem | awk -F\: '{ print ($1 * 60) + $2 }')
+      	secs=$(echo $wt_rem | awk -F\: '{ print ($1 * 60) + $2 }')
       else
          secs=$wt_rem 
       fi
