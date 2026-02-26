@@ -82,7 +82,7 @@ function info(){
       ### G E N E R A T E   E X T R A   W A R N I N G S ###
       #####################################################
 
-      if [[ $(squeue -j -h $SLURM_JOBID -o "%.9L") == "1:00:00" ]]
+      if [[ $(echo $(squeue -j -h $SLURM_JOBID -o "%.9L")) == "1:00:00" ]]
       then
          /bin/yad --title "JOBinfo for ${JOB%%.*}" \
          --width=400 \
@@ -94,7 +94,7 @@ function info(){
          --fontname="Sans Bold 20" \
          --text "Your job with jobID ${SLURM_JOBID}\n\nwill be terminated in <b>1 hour</b>" \
          --button=yad-ok &
-      elif [[ $(squeue -j -h $SLURM_JOBID -o "%.9L") == "30:00" ]]
+      elif [[ $(echo $(squeue -j -h $SLURM_JOBID -o "%.9L")) == "30:00" ]]
       then
          /bin/yad --title "JOBinfo for ${JOB%%.*}" \
          --width=400 \
@@ -106,7 +106,7 @@ function info(){
          --fontname="Sans Bold 20" \
          --text "Your job with jobID ${SLURM_JOBID}\n\nwill be terminated in <b>30 minutes</b>" \
          --button=yad-ok &
-      elif [[ $(squeue -j -h $SLURM_JOBID -o "%.9L") == "5:00" ]]
+      elif [[ $(echo $(squeue -j -h $SLURM_JOBID -o "%.9L")) == "5:00" ]]
       then
          /bin/yad --title "JOBinfo for ${JOB%%.*}" \
          --width=400 \
