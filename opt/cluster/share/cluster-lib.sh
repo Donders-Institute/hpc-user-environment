@@ -280,11 +280,6 @@ function run_guiapp() {
     local guimenu=$3
     local queue="interactive"
 
-    #echo name_guiapp: $name_guiapp
-    #echo cmd_guiapp:  $cmd_guiapp
-    #echo guimenu:     $guimenu
-    #echo partition:   $queue
-
     if [ $# -eq 4 ]; then
         queue=$4
     fi
@@ -325,14 +320,12 @@ function run_guiapp() {
  	[ "${REQUIREMENTS[2]}" == "TRUE" ] && KEEPOE="-o %x.out-%j -e %x.err-%j" || KEEPOE="-o /dev/null -e /dev/null"
         NODENAME=$(echo ${REQUIREMENTS[3]})
         # compose RESC_REQUIREMENT variable
-        RESRC_REQUIREMENT="--nodes=1 --ntasks-per-node=1 --x11 --mem=$MEM --time=$WALLTIME"
+        RESRC_REQUIREMENT="--nodes=1 --ntasks-per-node=1 --mem=$MEM --time=$WALLTIME"
         if [ ! -z "$NODENAME" ]
         then
             #Run on an optional specific node
             #Always set short hostname first and add dccn.nl manually
-            #echo ${NODENAME%%.*}
-            RESRC_REQUIREMENT="--nodes=1 --ntasks-per-node=1 --x11 --mem=$MEM --time=$WALLTIME --nodelist=${NODENAME%%.*}"
-            #echo $RESRC_REQUIREMENT
+            RESRC_REQUIREMENT="--nodes=1 --ntasks-per-node=1 --mem=$MEM --time=$WALLTIME --nodelist=${NODENAME%%.*}"
         fi
 
         # compose DISPLAY variable and make xhost setting
@@ -368,10 +361,17 @@ function run_guiapp() {
 
     echo
     echo -ne "\033[1mSubmitting job for interactive $name_guiapp session ... \033[0m"
-    echo "srun -Q ${KEEPOE} --mail-type=FAIL --job-name=${name_guiapp} ${RESRC_REQUIREMENT} --partition=$queue bash -c \"ulimit -v unlimited && export DISPLAY=${DISPLAY} && ${CLUSTER_UTIL_ROOT}/bin/slurm/yadjobinfo-slurm && $cmd_guiapp\""
-    echo
 
-    srun -Q ${KEEPOE} --mail-type=FAIL --job-name=${name_guiapp} ${RESRC_REQUIREMENT} --partition=$queue bash -c "ulimit -v unlimited && export DISPLAY=${DISPLAY} && ${CLUSTER_UTIL_ROOT}/bin/slurm/yadjobinfo-slurm && $cmd_guiapp" &
+    if [ -z $SLURM_JOBID ]; then
+        echo "srun -Q ${KEEPOE} --mail-type=FAIL --job-name=${name_guiapp} --x11 ${RESRC_REQUIREMENT} --partition=$queue bash -c \"ulimit -v unlimited && export DISPLAY=${DISPLAY} && ${CLUSTER_UTIL_ROOT}/bin/slurm/yadjobinfo-slurm && $cmd_guiapp\""
+        echo
+
+        srun -Q ${KEEPOE} --mail-type=FAIL --job-name=${name_guiapp} --x11 ${RESRC_REQUIREMENT} --partition=$queue bash -c "ulimit -v unlimited && export DISPLAY=${DISPLAY} && ${CLUSTER_UTIL_ROOT}/bin/slurm/yadjobinfo-slurm && $cmd_guiapp" &
+    else
+        echo "sbatch -Q ${KEEPOE} --mail-type=FAIL --job-name=${name_guiapp} ${RESRC_REQUIREMENT} --partition=$queue --wrap \"ulimit -v unlimited && export DISPLAY=${DISPLAY} && ${CLUSTER_UTIL_ROOT}/bin/slurm/yadjobinfo-slurm && $cmd_guiapp\""
+        echo
+        sbatch -Q ${KEEPOE} --mail-type=FAIL --job-name=${name_guiapp} ${RESRC_REQUIREMENT} --partition=$queue --wrap "ulimit -v unlimited && export DISPLAY=${DISPLAY} && ${CLUSTER_UTIL_ROOT}/bin/slurm/yadjobinfo-slurm && $cmd_guiapp" &
+    fi
 }
 
 #---------------------------------------------------------------------#
@@ -389,10 +389,6 @@ function run_app() {
     local cmd_app=$2
     local queue="batch"
     local mode="batch"
-    echo name_app: $name_app
-    echo cmd_app:  $cmd_app
-    echo queue:    $queue
-    echo mode:     $mode
 
     if [ $# -eq 3 ]; then
         queue=$3
@@ -442,12 +438,10 @@ function run_app() {
         echo
         return $ec
     else 
-        echo $name_app
-        #echo "srun -Q ${KEEPOE} --mail-type=FAIL --job-name=${name_app} ${RESRC_REQUIREMENT} --partition=$queue \"$cmd_app\""
-	echo ${name_app}
-	echo ${RESRC_REQUIREMENT}
-	echo ${queue}
-	echo ${cmd_app}
-        srun -v --mail-type=FAIL --job-name=${name_app} --x11 ${RESRC_REQUIREMENT} --partition=${queue} ${cmd_app}
+	if [ -z $SLURM_JOBID ]; then
+            srun -v --mail-type=FAIL --job-name=${name_app} --x11 ${RESRC_REQUIREMENT} --partition=${queue} ${cmd_app}
+        else
+            sbatch -v --mail-type=FAIL --job-name=${name_app} ${RESRC_REQUIREMENT} --partition=${queue} --wrap "${cmd_app}"
+        fi
     fi
 }
