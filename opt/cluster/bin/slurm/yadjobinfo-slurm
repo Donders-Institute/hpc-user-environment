@@ -29,13 +29,13 @@ function seconds {
 
 function job_walltime_requested {
     # gives requested walltime D-HH:MM:SS converted to seconds by function seconds
-    seconds $(squeue -j $SLURM_JOBID -h -o "%l")
+    seconds $(squeue -j $1 -h -o "%l")
     #sacct -j $1 --format=TimeLimitRaw -n | head -n1 | awk '{ print $1 * 60 }'
 }
 
 function job_walltime_elapsed {
     # now werking with better slurm elapsed walltime function
-    seconds $(squeue -j $SLURM_JOBID -h -o "%M")
+    seconds $(squeue -j $1 -h -o "%M")
     #sacct -j $1 --format=ElapsedRaw -n | head -1
 }
 
@@ -50,17 +50,17 @@ function job_memory_info {
 function info {
    [ ! -e /usr/bin/yad ] && echo "YAD not found: /usr/bin/yad" >&2 && exit
 
-   requested_walltime=$(job_walltime_requested)
+   requested_walltime=$(job_walltime_requested $SLURM_JOBID)
    requested_memory=$(job_memory_info limit_in_bytes)
    
-   elapsed_walltime=$(job_walltime_elapsed)
+   elapsed_walltime=$(job_walltime_elapsed $SLURM_JOBID)
 
    # YAD progress bars loop start here
    while [ $elapsed_walltime -lt $requested_walltime ]; do
 
-      requested_walltime=$(job_walltime_requested)
+      requested_walltime=$(job_walltime_requested $SLURM_JOBID)
 
-      elapsed_walltime=$(job_walltime_elapsed)
+      elapsed_walltime=$(job_walltime_elapsed $SLURM_JOBID)
   
       used_memory=$(job_memory_info usage_in_bytes)
       max_used_memory=$(job_memory_info max_usage_in_bytes)
