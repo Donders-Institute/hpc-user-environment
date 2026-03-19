@@ -23,51 +23,13 @@ function megabytes {
 }
 
 function job_walltime_requested {
-    wt_list=$(squeue -j $SLURM_JOB_ID -h --Format TimeLimit)
-
-    # Convert ##:##:## notification to seconds
-    # squeue displays time as ##:##:##, ##:## !!!DEFAULT IS MINUTES!!!
-    # secs must be calculated accordingly by counting number of colons
-    # ##:##:## has two colons, ##:## has one !!!MINIMUM IS ALWAYS ONE!!!
-    if [ $(echo $wt_list | grep "-") ]; then
-        echo $wt_list | awk -F: '{ print ($1 * 24 * 3600) + ($2 * 60) + $3 }'
-    elif [ $(echo $wt_list | awk -F\: '{print NF-1}') -eq "2" ]; then
-        echo $wt_list | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }'
-    else
-        echo $wt_list | awk -F: '{ print ($1 * 60) + $2 }'
-    fi
+    # gives us requested walltime in seconds right away so no need to convert
+    sacct -j $1 --format=TimeLimitRaw -n | head -n1 | awk '{ print $1 * 60 }'
 }
 
-function job_walltime_remained {
-
-    # Settings for seconds adjustments in remaining walltime
-    wt_rem=$(squeue --jobs $SLURM_JOB_ID -o "%L" | sed '1d')
-
-    # squeue displays time as #days-##:##:##, ##:## or ##
-    # secs must be calculated accordingly by counting number of colons
-    # but also number of days before minus sign
-    # #days-##:##:## has number of days times 24 hours + two colons,
-    # ##:## has one, ## has none
-    # first check if number of days is set (minus-sign is present in wt_rem)
-    if [ $(echo $wt_rem | grep "-") ]; then
-       # days before minus character is set
-       # converting string to ##:##:##
-       days=$(echo $wt_rem | cut -d- -f 1)
-       initial_hours=$(echo $wt_rem | grep -oP '(?<=[-])[^:]*')
-       hours=$(echo $(($days*24+10#$initial_hours)))
-       minutes=$(echo $wt_rem | awk -F: '{ print $2 }')
-       seconds=$(echo $wt_rem | awk -F: '{ print $3 }')
-       wt_rem=$(echo $hours:$minutes:$seconds)
-    fi
-
-    # convert all to seconds (including #days times 24hrs if available)
-    if [ $(echo $wt_rem | awk -F\: '{print NF-1}') -eq "2" ]; then
-       echo $wt_rem | awk -F\: '{ print ($1 * 3600) + ($2 * 60) + $3 }'
-    elif [ $(echo $wt_rem | awk -F\: '{print NF-1}') -eq "1" ]; then
-       echo $wt_rem | awk -F\: '{ print ($1 * 60) + $2 }'
-    else
-       echo $wt_rem 
-    fi
+function job_walltime_elapsed {
+    # now werking with better slurm elapsed walltime function
+    sacct -j $1 --format=ElapsedRaw -n | head -1
 }
 
 function job_memory_info {
@@ -81,20 +43,22 @@ function job_memory_info {
 function info {
    [ ! -e /usr/bin/yad ] && echo "YAD not found: /usr/bin/yad" >&2 && exit
 
-   requested_walltime=$(job_walltime_requested)
+   requested_walltime=$(job_walltime_requested $SLURM_JOB_ID)
    requested_memory=$(job_memory_info limit_in_bytes)
-
-   remained_walltime=$requested_walltime
+   
+   elapsed_walltime=$(job_walltime_elapsed)
 
    # YAD progress bars loop start here
-   while [ $remained_walltime -gt 0 ]; do
+   while [ $elapsed_walltime -lt $requested_walltime ]; do
 
-      remained_walltime=$(job_walltime_remained)
+#      requested_walltime=$(job_walltime_requested)
+
+      elapsed_walltime=$(job_walltime_elapsed $SLURM_JOB_ID)
       used_memory=$(job_memory_info usage_in_bytes)
       max_used_memory=$(job_memory_info max_usage_in_bytes)
 
       # Calculate percent
-      WALLPERCENT=$((100-100*remained_walltime/requested_walltime))
+      WALLPERCENT=$((100*elapsed_walltime/requested_walltime))
       MEMPERCENT=$((100*used_memory/requested_memory))
       MAXMEMPERCENT=$((100*max_used_memory/requested_memory))
       
@@ -103,6 +67,7 @@ function info {
       PRINTMEMINITIAL=`megabytes $requested_memory`
       PRINTMAXMEM=`megabytes $max_used_memory`
 
+      printf "1:$WALLPERCENT\n2:$MEMPERCENT\n3:$MAXMEMPERCENT\n" >> yad.log
       printf "1:$WALLPERCENT\n2:$MEMPERCENT\n3:$MAXMEMPERCENT\n"
       printf "1:#Time remaining $PRINTWALL\n2:#Memory usage: $PRINTMEM MB of requested $PRINTMEMINITIAL MB\n3:#Max used memory: $PRINTMAXMEM MB of requested $PRINTMEMINITIAL MB\n"
       sleep 1
