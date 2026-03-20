@@ -85,6 +85,7 @@ function info {
          --bar="Memory usage    ":NORM \
          --bar="Max memory usage":NORM \
          --button="Terminate this Slurm JOBID: ${SLURM_JOBID}":"scancel ${SLURM_JOBID}" \
+	 --button='Request jobtime extension:/bin/bash -c "$CLUSTER_UTIL_ROOT/bin/slurm/yadextend-jobtime"' \
          --buttons-layout=center \
 	 --auto-close \
          --auto-kill &
