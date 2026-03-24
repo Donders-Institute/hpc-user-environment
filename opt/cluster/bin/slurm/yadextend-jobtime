@@ -43,7 +43,7 @@ function mailing {
    echo "JobID: $SLURM_JOBID"
    echo "Walltime extension: $REQ hours"
    echo
-   echo "Run as root on the slurm server:"
+   echo "Run as root on one of the cluster access nodes:"
    echo "scontrol update jobid=$SLURM_JOBID TimeLimit=$nw_wt"
    echo
    echo "Current walltime is:    $cur_wt"
@@ -55,7 +55,7 @@ function mailing {
    echo "Yours,"
    echo "$username."
    # sending email
-   )  | mail -s "Request walltime extension for ${username}" E.Gerrits@donders.ru.nl
+   )  | mail -s "Request walltime extension for ${username}" ${CLUSTER_ADMINS}
 
    /bin/yad --title "Sending email to helpdesk" \
             --width=400 \
@@ -98,7 +98,7 @@ if [[ $nowhrs -lt $ohrsmin ]] || [[ $nowhrs -gt $ohrsmax ]] ; then
 Time extension for your job
 with jobID ${SLURM_JOBID}\nis <b>denied.</b>
 
-Extension request only valid between 9am and 16pm.
+Extension request only valid between 9am and 4pm.
 " \
             --text-align=center \
             --button=yad-ok
