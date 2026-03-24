@@ -1,0 +1,273 @@
+#!/bin/bash
+#
+# This script generates an email to helpdesk with a walltime extension request
+# The request has to meet some conditions which will be validated:
+# 1. request is only valid between 9am and 16pm (office hours helpdesk)
+# 2. the remaining walltime must be less than 4 hours and will be
+#    checked in this script.
+# 3. max walltime extension is 72 hours
+# 
+
+function seconds {
+    # convert ##-##:##:## (days-hours:minutes:seconds) to seconds
+    echo $1 | sed 's/:\|-/ /g;' | awk '{print $4" "$3" "$2" "$1}' | awk '{print $1+$2*60+$3*3600+$4*86400}'
+}
+
+function mailing() {
+   # Here the mail is generated and send to Helpdesk
+   REQ=$1
+   username=$(/usr/bin/getent passwd $USER | awk -F: '{ print $5 }')
+   #echo Mailing $username
+   (
+   echo Dear Helpdesk,
+   echo 
+   echo "Request for walltime extension on Slurm HPC cluster:"
+   echo "JobID: $SLURM_JOBID"
+   echo "Walltime extension: $REQ hours"
+   echo
+   echo "Run as root on the slurm server:"
+   echo "scontrol update jobid=$SLURM_JOBID TimeLimit=$nw_wt"
+   echo
+   echo "Current walltime is:    $cur_wt"
+   echo "Walltime to add is :    $REQ hours ($wt_ext)"
+   echo "New walltime should be: $nw_wt"
+   echo
+   echo "Thanks in advance."
+   echo
+   echo "Yours,"
+   echo "$username."
+   # sending email
+   )  | mail -s "Request walltime extension for ${username}" E.Gerrits@donders.ru.nl
+
+   /bin/yad --title "Sending email to helpdesk" \
+            --width=400 \
+            --height=120 \
+            --on-top \
+            --center \
+            --buttons-layout=center \
+            --text-align=center \
+            --fontname="Sans Bold 20" \
+            --text="
+Job time extension request email is
+sent to helpdesk@donders.ru.nl.
+
+Keep checking you JOBinfo for HPC_Desktop
+information dialog for jobID ${SLURM_JOBID}
+" \
+            --text-align=center \
+            --button=yad-ok
+   exit 0
+}
+
+# Checks before extension dialog
+
+# Check helpdesk office hours
+ohrsmin=9
+ohrsmax=16
+nowhrs=$(date +%H)
+
+if [[ $nowhrs -lt $ohrsmin ]] || [[ $nowhrs -gt $ohrsmax ]] ; then
+   # Time extension request is outside helpdesk office hours.
+   /bin/yad --title "Job time extension denied" \
+            --width=400 \
+            --height=120 \
+            --on-top \
+            --center \
+            --buttons-layout=center \
+            --text-align=center \
+            --fontname="Sans Bold 20" \
+            --text="
+Time extension for your job
+with jobID ${SLURM_JOBID}\nis <b>denied.</b>
+
+Extension request only valid between 9am and 16pm.
+" \
+            --text-align=center \
+            --button=yad-ok
+   exit 1
+fi
+	
+# Check if Remaining Walltime is less than 4 hours
+remaining_walltime=$(seconds $(squeue -h -j $SLURM_JOBID -o "%L"))
+# convert to seconds
+#if [ $(echo $remaining_walltime | grep "-") ]
+#then
+#   export remaining_walltime_secs=$(echo $remaining_walltime | awk -F: '{ print ($1 * 24 * 3600) + ($2 * 60) + $3 }')
+#elif [ $(echo $remaining_walltime | awk -F\: '{print NF-1}') -eq "2" ]
+#then
+#   export remaining_walltime_secs=$(echo $remaining_walltime | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }')
+#else
+#   export remaining_walltime_secs=$(echo $remaining_walltime | awk -F: '{ print ($1 * 60) + $2 }')
+#fi
+#echo $remaining_walltime_secs
+if [[ "$remaining_walltime" -gt 14400 ]] ; then
+   # Remaining walltime must be less then 4 hours.
+   /bin/yad --title "Job time extension denied" \
+            --width=400 \
+            --height=120 \
+            --on-top \
+            --center \
+            --buttons-layout=center \
+            --text-align=center \
+            --fontname="Sans Bold 20" \
+            --text="
+Time extension for your job
+with jobID ${SLURM_JOBID} is <b>denied.</b>
+
+Jobtime remaining must be less than 4 hours.
+" \
+            --text-align=center \
+            --button=yad-ok
+   exit 1
+fi
+
+# Below yad dialog asks for walltime extension
+EXTENSION=$(yad \
+            --center \
+            --ontop \
+            --buttons-layout=center \
+            --auto-kill \
+            --auto-close \
+            --title="Job time Extension" \
+            --text="
+An email to DCCN Helpdesk will be generated.
+
+DCCN Helpdesk is only available
+during office hours on weekdays.
+
+Walltime can only be extended for your running jobs.
+" \
+            --text-align=center \
+            --form \
+            --separator=" " \
+            --field="Enter walltime extension in hours:" )
+
+ret=$?
+
+if [[ $ret -eq 1 ]] || [[ $ret -eq 252 ]]
+then
+   echo "Command Cancelled..."
+   echo
+   exit 1
+fi
+
+#######################################################################
+# Gathering all sorts of information (might be usefull to other scripts
+#HRS=$(echo ${EXTENSION})
+#echo $HRS
+#
+#extension=$HRS
+#echo extension=$HRS
+#
+#extension_in_seconds=$(echo $extension*3600 | bc)
+#echo extension_in_seconds=$extension_in_seconds
+#
+#current_walltime_in_seconds=$(sacct -j $SLURM_JOBID --format=TimeLimitRaw -n | head -n1 | awk '{ print $1 * 60 }')
+#echo current_walltime_in_seconds=$current_walltime_in_seconds
+#
+#elapsed_walltime_in_seconds=$(sacct -j $SLURM_JOBID --format=ElapsedRaw -n | head -1)
+#echo elapsed_walltime_in_seconds=$elapsed_walltime_in_seconds
+#
+#new_walltime_in_seconds=$(echo $current_walltime_in_seconds+$elapsed_walltime_in_seconds+$extension_in_seconds | bc)
+#new_walltime_in_seconds=$(echo $current_walltime_in_seconds+$extension_in_seconds | bc)
+#echo new_walltime_in_seconds=$new_walltime_in_seconds
+#
+#new_walltime_in_hours=$(echo $new_walltime_in_seconds/3600 | bc)
+#echo new_walltime_in_hours=$new_walltime_in_hours
+#
+#el_secs=$elapsed_walltime_in_seconds
+######################################################################
+
+#
+# All we need is the sum of current walltime and extension hours
+#
+# Walltime (TimeLimit) is recalculated
+#
+
+# Condition validations during extension request
+
+HRS=$(echo ${EXTENSION})
+
+# Check if HRS is empty or less than 1
+if [[ -z "$HRS" ]] || (( $HRS < 1 )) ; then
+   # Input is empty or less than 1.
+      /bin/yad --title "Job time extension denied" \
+            --width=400 \
+            --height=120 \
+            --on-top \
+            --center \
+            --buttons-layout=center \
+            --text-align=center \
+            --fontname="Sans Bold 20" \
+            --text="
+Job time extension input is empty or less than 1.
+
+Please enter job time extension in hours
+with a maximum time extension of 72 hours.
+" \
+            --text-align=center \
+            --button=yad-ok
+   exit 1
+fi
+
+# Check if HRS is lower or equal than 72 (max walltime extension)
+if [[ "$HRS" -gt 72 ]] ; then
+   # Maximum job extension is 72 hours.
+   /bin/yad --title "Job time extension denied" \
+            --width=400 \
+            --height=120 \
+            --on-top \
+            --center \
+            --buttons-layout=center \
+            --text-align=center \
+            --fontname="Sans Bold 20" \
+            --text="
+Time extension for your job
+with jobID ${SLURM_JOBID} is <b>denied.</b>
+
+Maximum time Extension is 72 hours.
+" \
+            --text-align=center \
+            --button=yad-ok
+   exit 1
+fi
+
+# All conditions are met
+#Generation variables for email generation
+
+extension=$HRS
+#echo extension=$HRS
+extension_in_seconds=$(echo $extension*3600 | bc)
+#echo extension_in_seconds=$extension_in_seconds
+current_time_in_seconds=$(seconds $(squeue -j $SLURM_JOBID -h -o "%l"))
+#echo current_time_in_seconds=$current_walltime_in_seconds
+
+# Sum of the above:
+new_walltime_in_seconds=$(echo $current_time_in_seconds+$extension_in_seconds | bc)
+#echo new_walltime_in_seconds=$new_walltime_in_seconds
+
+wt_secs=$new_walltime_in_seconds
+cur_secs=$current_time_in_seconds
+ext_secs=$extension_in_seconds
+
+# In Slurm notation:
+if [[ $wt_secs -ge 86400 ]]; then
+   nw_wt=`printf '%d-%d:%d:%d\n' $((wt_secs/86400)) $((wt_secs%86400/3600)) $((wt_secs%3600/60)) $((wt_secs%60))`
+else
+   nw_wt=`printf '%d:%d:%d\n' $((wt_secs%86400/3600)) $((wt_secs%3600/60)) $((wt_secs%60))`
+fi
+
+if [[ $cur_secs -ge 86400 ]]; then
+   cur_wt=`printf '%d-%d:%d:%d\n' $((cur_secs/86400)) $((cur_secs%86400/3600)) $((cur_secs%3600/60)) $((cur_secs%60))`
+else
+   cur_wt=`printf '%d:%d:%d\n' $((cur_secs%86400/3600)) $((cur_secs%3600/60)) $((cur_secs%60))`
+fi
+
+if [[ $ext_secs -ge 86400 ]]; then
+   wt_ext=`printf '%d-%d:%d:%d\n' $((ext_secs/86400)) $((ext_secs%86400/3600)) $((ext_secs%3600/60)) $((ext_secs%60))`
+else
+   wt_ext=`printf '%d:%d:%d\n' $((ext_secs%86400/3600)) $((ext_secs%3600/60)) $((ext_secs%60))`
+fi
+
+# Sending email
+mailing $extension
