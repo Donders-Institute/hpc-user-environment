@@ -70,7 +70,6 @@ function info {
       PRINTMEMINITIAL=`megabytes $requested_memory`
       PRINTMAXMEM=`megabytes $max_used_memory`
 
-      printf "1:$WALLPERCENT\n2:$MEMPERCENT\n3:$MAXMEMPERCENT\n" >> yad.log
       printf "1:$WALLPERCENT\n2:$MEMPERCENT\n3:$MAXMEMPERCENT\n"
       printf "1:#Time remaining $PRINTWALL\n2:#Memory usage: $PRINTMEM MB of requested $PRINTMEMINITIAL MB\n3:#Max used memory: $PRINTMAXMEM MB of requested $PRINTMEMINITIAL MB\n"
       sleep 1
