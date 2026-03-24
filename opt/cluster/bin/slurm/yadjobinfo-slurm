@@ -40,6 +40,25 @@ function job_memory_info {
     | awk -F" " '{ print $2 }'
 }
 
+function job_timeout_alert {
+
+   tsecs=$1
+   tstr=$( printf '%d hours %d minutes %d seconds' $((tsecs%86400/3600)) $((tsecs%3600/60)) $((tsecs%60)) )
+
+   /usr/bin/yad \
+      --title "JOBinfo for ${JOB%%.*}" \
+      --width=400 \
+      --height=120 \
+      --on-top \
+      --center \
+      --buttons-layout=center \
+      --text-align=center \
+      --fontname="Sans Bold 20" \
+      --text "Your job with jobID ${SLURM_JOBID}\n\nwill be
+terminated in <b>${tstr}</b>" \
+      --button=yad-ok &
+}
+
 # Main progressbars function
 function info {
    [ ! -e /usr/bin/yad ] && echo "YAD not found: /usr/bin/yad" >&2 && exit
@@ -50,6 +69,9 @@ function info {
    requested_walltime=${walltime_info[0]}
    elapsed_walltime=${walltime_info[1]}
 
+   alert1=false
+   alert2=false
+
    # YAD progress bars loop start here
    while [ $elapsed_walltime -lt $requested_walltime ]; do
 
@@ -59,6 +81,17 @@ function info {
       walltime_info=( $(job_walltime_info) )
       requested_walltime=${walltime_info[0]}
       elapsed_walltime=${walltime_info[1]}
+      remaining_walltime=$(( $requested_walltime - $elapsed_walltime ))
+
+      if [[ $remaining_walltime -lt $(( 4*3600 )) && ! $alert1 ]]; then
+         job_timeout_alert $remaining_walltime
+         alert1=true
+      fi
+
+      if [[ $remaining_walltime -lt $(( 1*3600 )) && ! $alert2 ]]; then
+         job_timeout_alert $remaining_walltime
+         alert2=true
+      fi
 
       # Calculate percent
       WALLPERCENT=$((100*elapsed_walltime/requested_walltime))
