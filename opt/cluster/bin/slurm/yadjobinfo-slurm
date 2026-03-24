@@ -72,6 +72,9 @@ function info {
    alert1=0
    alert2=0
 
+   4hour=$(( 4*3600 ))
+   1hour=$(( 1*3600 ))
+
    # YAD progress bars loop start here
    while [ $elapsed_walltime -lt $requested_walltime ]; do
 
@@ -83,12 +86,12 @@ function info {
       elapsed_walltime=${walltime_info[1]}
       remaining_walltime=$(( $requested_walltime - $elapsed_walltime ))
 
-      if [[ $remaining_walltime -lt $(( 4*3600 )) && $alert1 -lt 1 ]]; then
+      if [[ $remaining_walltime -lt $4hour && $alert1 -lt 1 && $requested_walltime -gt $4hour ]]; then
          job_timeout_alert $remaining_walltime
          alert1=1
       fi
 
-      if [[ $remaining_walltime -lt $(( 1*3600 )) && $alert2 -lt 1 ]]; then
+      if [[ $remaining_walltime -lt $1hour && $alert2 -lt 1 && $requested_walltime -gt $1hour ]]; then
          job_timeout_alert $remaining_walltime
          alert2=1
       fi
