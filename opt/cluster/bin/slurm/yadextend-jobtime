@@ -13,9 +13,27 @@ function seconds {
     echo $1 | sed 's/:\|-/ /g;' | awk '{print $4" "$3" "$2" "$1}' | awk '{print $1+$2*60+$3*3600+$4*86400}'
 }
 
-function mailing() {
+function format_duration {
+   local tsecs=$1
+   if [[ $tsecs -ge 86400 ]]; then
+      printf '%d-%d:%d:%d\n' $((tsecs/86400)) $((tsecs%86400/3600)) $((tsecs%3600/60)) $((tsecs%60))
+   else
+      printf '%d:%d:%d\n' $((tsecs%86400/3600)) $((tsecs%3600/60)) $((tsecs%60))
+   fi
+}
+
+function mailing {
    # Here the mail is generated and send to Helpdesk
-   REQ=$1
+   extension_in_seconds=$(echo $1*3600 | bc)
+   current_time_in_seconds=$(seconds $(squeue -j $SLURM_JOBID -h -o "%l"))
+
+   # Sum of the above:
+   new_walltime_in_seconds=$(echo $current_time_in_seconds+$extension_in_seconds | bc)
+
+   nw_wt=$( format_duration $new_walltime_in_seconds )
+   cur_wt=$( format_duration $current_time_in_seconds )
+   ext_wt=$( format_duration $extension_in_seconds )
+
    username=$(/usr/bin/getent passwd $USER | awk -F: '{ print $5 }')
    #echo Mailing $username
    (
@@ -29,7 +47,7 @@ function mailing() {
    echo "scontrol update jobid=$SLURM_JOBID TimeLimit=$nw_wt"
    echo
    echo "Current walltime is:    $cur_wt"
-   echo "Walltime to add is :    $REQ hours ($wt_ext)"
+   echo "Walltime to add is :    $REQ hours ($ext_wt)"
    echo "New walltime should be: $nw_wt"
    echo
    echo "Thanks in advance."
@@ -89,17 +107,7 @@ fi
 	
 # Check if Remaining Walltime is less than 4 hours
 remaining_walltime=$(seconds $(squeue -h -j $SLURM_JOBID -o "%L"))
-# convert to seconds
-#if [ $(echo $remaining_walltime | grep "-") ]
-#then
-#   export remaining_walltime_secs=$(echo $remaining_walltime | awk -F: '{ print ($1 * 24 * 3600) + ($2 * 60) + $3 }')
-#elif [ $(echo $remaining_walltime | awk -F\: '{print NF-1}') -eq "2" ]
-#then
-#   export remaining_walltime_secs=$(echo $remaining_walltime | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }')
-#else
-#   export remaining_walltime_secs=$(echo $remaining_walltime | awk -F: '{ print ($1 * 60) + $2 }')
-#fi
-#echo $remaining_walltime_secs
+
 if [[ "$remaining_walltime" -gt 14400 ]] ; then
    # Remaining walltime must be less then 4 hours.
    /bin/yad --title "Job time extension denied" \
@@ -122,7 +130,7 @@ Jobtime remaining must be less than 4 hours.
 fi
 
 # Below yad dialog asks for walltime extension
-EXTENSION=$(yad \
+HRS=$(yad \
             --center \
             --ontop \
             --buttons-layout=center \
@@ -140,7 +148,7 @@ Walltime can only be extended for your running jobs.
             --text-align=center \
             --form \
             --separator=" " \
-            --field="Enter walltime extension in hours:" )
+            --field="Enter walltime extension in hours:":NUM 1\!1..72\!1\!0 )
 
 ret=$?
 
@@ -151,45 +159,8 @@ then
    exit 1
 fi
 
-#######################################################################
-# Gathering all sorts of information (might be usefull to other scripts
-#HRS=$(echo ${EXTENSION})
-#echo $HRS
-#
-#extension=$HRS
-#echo extension=$HRS
-#
-#extension_in_seconds=$(echo $extension*3600 | bc)
-#echo extension_in_seconds=$extension_in_seconds
-#
-#current_walltime_in_seconds=$(sacct -j $SLURM_JOBID --format=TimeLimitRaw -n | head -n1 | awk '{ print $1 * 60 }')
-#echo current_walltime_in_seconds=$current_walltime_in_seconds
-#
-#elapsed_walltime_in_seconds=$(sacct -j $SLURM_JOBID --format=ElapsedRaw -n | head -1)
-#echo elapsed_walltime_in_seconds=$elapsed_walltime_in_seconds
-#
-#new_walltime_in_seconds=$(echo $current_walltime_in_seconds+$elapsed_walltime_in_seconds+$extension_in_seconds | bc)
-#new_walltime_in_seconds=$(echo $current_walltime_in_seconds+$extension_in_seconds | bc)
-#echo new_walltime_in_seconds=$new_walltime_in_seconds
-#
-#new_walltime_in_hours=$(echo $new_walltime_in_seconds/3600 | bc)
-#echo new_walltime_in_hours=$new_walltime_in_hours
-#
-#el_secs=$elapsed_walltime_in_seconds
-######################################################################
-
-#
-# All we need is the sum of current walltime and extension hours
-#
-# Walltime (TimeLimit) is recalculated
-#
-
-# Condition validations during extension request
-
-HRS=$(echo ${EXTENSION})
-
 # Check if HRS is empty or less than 1
-if [[ -z "$HRS" ]] || (( $HRS < 1 )) ; then
+if [[ -z $HRS || $HRS -lt 1 ]] ; then
    # Input is empty or less than 1.
       /bin/yad --title "Job time extension denied" \
             --width=400 \
@@ -211,7 +182,7 @@ with a maximum time extension of 72 hours.
 fi
 
 # Check if HRS is lower or equal than 72 (max walltime extension)
-if [[ "$HRS" -gt 72 ]] ; then
+if [[ $HRS -gt 72 ]] ; then
    # Maximum job extension is 72 hours.
    /bin/yad --title "Job time extension denied" \
             --width=400 \
@@ -232,42 +203,5 @@ Maximum time Extension is 72 hours.
    exit 1
 fi
 
-# All conditions are met
-#Generation variables for email generation
-
-extension=$HRS
-#echo extension=$HRS
-extension_in_seconds=$(echo $extension*3600 | bc)
-#echo extension_in_seconds=$extension_in_seconds
-current_time_in_seconds=$(seconds $(squeue -j $SLURM_JOBID -h -o "%l"))
-#echo current_time_in_seconds=$current_walltime_in_seconds
-
-# Sum of the above:
-new_walltime_in_seconds=$(echo $current_time_in_seconds+$extension_in_seconds | bc)
-#echo new_walltime_in_seconds=$new_walltime_in_seconds
-
-wt_secs=$new_walltime_in_seconds
-cur_secs=$current_time_in_seconds
-ext_secs=$extension_in_seconds
-
-# In Slurm notation:
-if [[ $wt_secs -ge 86400 ]]; then
-   nw_wt=`printf '%d-%d:%d:%d\n' $((wt_secs/86400)) $((wt_secs%86400/3600)) $((wt_secs%3600/60)) $((wt_secs%60))`
-else
-   nw_wt=`printf '%d:%d:%d\n' $((wt_secs%86400/3600)) $((wt_secs%3600/60)) $((wt_secs%60))`
-fi
-
-if [[ $cur_secs -ge 86400 ]]; then
-   cur_wt=`printf '%d-%d:%d:%d\n' $((cur_secs/86400)) $((cur_secs%86400/3600)) $((cur_secs%3600/60)) $((cur_secs%60))`
-else
-   cur_wt=`printf '%d:%d:%d\n' $((cur_secs%86400/3600)) $((cur_secs%3600/60)) $((cur_secs%60))`
-fi
-
-if [[ $ext_secs -ge 86400 ]]; then
-   wt_ext=`printf '%d-%d:%d:%d\n' $((ext_secs/86400)) $((ext_secs%86400/3600)) $((ext_secs%3600/60)) $((ext_secs%60))`
-else
-   wt_ext=`printf '%d:%d:%d\n' $((ext_secs%86400/3600)) $((ext_secs%3600/60)) $((ext_secs%60))`
-fi
-
 # Sending email
-mailing $extension
+mailing $HRS
