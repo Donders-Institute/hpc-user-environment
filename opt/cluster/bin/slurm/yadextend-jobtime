@@ -82,7 +82,7 @@ information dialog for jobID ${SLURM_JOBID}
 # Check helpdesk office hours
 ohrsmin=9
 ohrsmax=16
-nowhrs=$(date +%H)
+nowhrs=$(date +%-H)
 
 if [[ $nowhrs -lt $ohrsmin ]] || [[ $nowhrs -gt $ohrsmax ]] ; then
    # Time extension request is outside helpdesk office hours.
