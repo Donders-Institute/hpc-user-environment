@@ -54,8 +54,8 @@ function job_timeout_alert {
       --buttons-layout=center \
       --text-align=center \
       --fontname="Sans Bold 20" \
-      --text "Your job with jobID ${SLURM_JOBID}\n\nwill be
-terminated in <b>${tstr}</b>" \
+      --text "Your job with jobID ${SLURM_JOBID}\n\nwill be terminated in
+<b>${tstr}</b>" \
       --button=yad-ok &
 }
 
