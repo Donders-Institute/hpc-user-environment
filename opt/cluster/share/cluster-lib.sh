@@ -368,9 +368,9 @@ function run_guiapp() {
 
         srun -Q ${KEEPOE} --mail-type=FAIL --job-name=${name_guiapp} --x11 ${RESRC_REQUIREMENT} --partition=$queue bash -c "ulimit -v unlimited && export DISPLAY=${DISPLAY} && ${CLUSTER_UTIL_ROOT}/bin/slurm/yadjobinfo-slurm && $cmd_guiapp" &
     else
-        echo "sbatch -Q ${KEEPOE} --mail-type=FAIL --job-name=${name_guiapp} ${RESRC_REQUIREMENT} --partition=$queue --wrap \"ulimit -v unlimited && export DISPLAY=${DISPLAY} && ${CLUSTER_UTIL_ROOT}/bin/slurm/yadjobinfo-slurm && $cmd_guiapp\""
+	    echo "sbatch -Q ${KEEPOE} --mail-type=FAIL --job-name=${name_guiapp} ${RESRC_REQUIREMENT} --partition=$queue --wrap \"ulimit -v unlimited && export DISPLAY=${DISPLAY} && eval \$(dbus-launch --sh-syntax) && export DBUS_SESSION_BUS_ADDRESS && ${CLUSTER_UTIL_ROOT}/bin/slurm/yadjobinfo-slurm && $cmd_guiapp\""
         echo
-        sbatch -Q ${KEEPOE} --mail-type=FAIL --job-name=${name_guiapp} ${RESRC_REQUIREMENT} --partition=$queue --wrap "ulimit -v unlimited && export DISPLAY=${DISPLAY} && ${CLUSTER_UTIL_ROOT}/bin/slurm/yadjobinfo-slurm && $cmd_guiapp" &
+	sbatch -Q ${KEEPOE} --mail-type=FAIL --job-name=${name_guiapp} ${RESRC_REQUIREMENT} --partition=$queue --wrap "ulimit -v unlimited && export DISPLAY=${DISPLAY} && eval \$(dbus-launch --sh-syntax) && export DBUS_SESSION_BUS_ADDRESS && ${CLUSTER_UTIL_ROOT}/bin/slurm/yadjobinfo-slurm && $cmd_guiapp"
     fi
 }
 
