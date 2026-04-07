@@ -86,12 +86,12 @@ function info {
       elapsed_walltime=${walltime_info[1]}
       remaining_walltime=$(( $requested_walltime - $elapsed_walltime ))
 
-      if [[ $remaining_walltime -lt ${fourhour} && $alert1 -lt 1 && $requested_walltime -gt ${fourhour} ]]; then
+      if [[ $remaining_walltime -le ${fourhour} && $alert1 -lt 1 && $requested_walltime -gt ${fourhour} ]]; then
          job_timeout_alert $remaining_walltime
          alert1=1
       fi
 
-      if [[ $remaining_walltime -lt ${onehour} && $alert2 -lt 1 && $requested_walltime -gt ${onehour} ]]; then
+      if [[ $remaining_walltime -le ${onehour} && $alert2 -lt 1 && $requested_walltime -gt ${onehour} ]]; then
          job_timeout_alert $remaining_walltime
          alert2=1
       fi
@@ -101,7 +101,7 @@ function info {
       MEMPERCENT=$((100*used_memory/requested_memory))
       MAXMEMPERCENT=$((100*max_used_memory/requested_memory))
       
-      PRINTWALL=$(squeue --jobs $SLURM_JOBID -o "%L" | sed '1d')
+      PRINTWALL=$(squeue --jobs $SLURM_JOBID -h -o "%L")
       PRINTMEM=`megabytes $used_memory`
       PRINTMEMINITIAL=`megabytes $requested_memory`
       PRINTMAXMEM=`megabytes $max_used_memory`
