@@ -83,8 +83,9 @@ information dialog for jobID ${SLURM_JOBID}
 ohrsmin=9
 ohrsmax=16
 nowhrs=$(date +%-H)
+weekday=$(date +%u)
 
-if [[ $nowhrs -lt $ohrsmin ]] || [[ $nowhrs -gt $ohrsmax ]] ; then
+if [[ $weekday -gt 5 ]] || [[ $nowhrs -lt $ohrsmin ]] || [[ $nowhrs -gt $ohrsmax ]] ; then
    # Time extension request is outside helpdesk office hours.
    /bin/yad --title "Job time extension denied" \
             --width=400 \
@@ -98,7 +99,7 @@ if [[ $nowhrs -lt $ohrsmin ]] || [[ $nowhrs -gt $ohrsmax ]] ; then
 Time extension for your job
 with jobID ${SLURM_JOBID}\nis <b>denied.</b>
 
-Extension request only valid between 9am and 4pm.
+Extension request only valid between 9am and 4pm on a weekday (Mon-Fri).
 " \
             --text-align=center \
             --button=yad-ok
