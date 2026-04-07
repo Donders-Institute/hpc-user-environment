@@ -41,13 +41,13 @@ function mailing {
    echo 
    echo "Request for walltime extension on Slurm HPC cluster:"
    echo "JobID: $SLURM_JOBID"
-   echo "Walltime extension: $REQ hours"
+   echo "Walltime extension: $HRS hours"
    echo
    echo "Run as root on one of the cluster access nodes:"
    echo "scontrol update jobid=$SLURM_JOBID TimeLimit=$nw_wt"
    echo
    echo "Current walltime is:    $cur_wt"
-   echo "Walltime to add is :    $REQ hours ($ext_wt)"
+   echo "Walltime to add is :    $HRS hours ($ext_wt)"
    echo "New walltime should be: $nw_wt"
    echo
    echo "Thanks in advance."
