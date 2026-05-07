@@ -159,7 +159,8 @@ for SCRIPT in "$@" ; do
         echo Error: cannot locate the MATLAB script or function $SCRIPT
         exit 1
     fi
-        if echo $FULLNAME | grep -q '-' ; then
+
+    if echo $FULLNAME | grep -q '-' ; then
         echo 
         echo "Your matlab script filename contains a hyphen (-) sign."
         echo "This is not allowed (matlab sees this as a subtraction function)."
