@@ -12,6 +12,8 @@
 # honlee - 11jan2022: rollback change on 02nov2021
 # honlee - 11jan2022: added `module unload matlab` in torque job to avoid MATLAB_BIN env. variable being removed
 # honlee - 12dec2025: added `--ncpus` option to use more than 1 CPU cores on a node, default is 1
+# honlee - 17feb2026: relocated source file
+# edwger - 07may2026: check matlab script file(s) for hyphens in filename
 
 # load helper functions 
 source $CLUSTER_UTIL_ROOT/share/matlabXX-lib.sh
@@ -22,6 +24,7 @@ cat << EOF
 
 MATLAB_SUB allows you to start a matlab script with torque directly from 
 the linux command line.
+It is not allowed to use a hyphen-sign (-) in the script filename.
 
 You can use it like this
   matlab_sub <script.m>
@@ -154,6 +157,14 @@ for SCRIPT in "$@" ; do
         FULLNAME="$PWD/$SCRIPT"
     else
         echo Error: cannot locate the MATLAB script or function $SCRIPT
+        exit 1
+    fi
+        if echo $FULLNAME | grep -q '-' ; then
+        echo 
+        echo "Your matlab script filename contains a hyphen (-) sign."
+        echo "This is not allowed (matlab sees this as a subtraction function)."
+        echo "Either remove hyphen(s) or replace hyphen with underscore (_)."
+        echo "Exiting..."
         exit 1
     fi
 
