@@ -157,9 +157,9 @@ else
    if [[ "${RSTUDIO_SELECTION%%.*}" -ge 2024 ]]
    then
       echo "Starting RStudio gui App..."
-      /opt/rstudio/$RSTUDIO_SELECTION/rstudio &
+      /opt/rstudio/$RSTUDIO_SELECTION/rstudio 2>/dev/null &
    else
       echo "Starting RStudio gui App..."
-      /opt/rstudio/$RSTUDIO_SELECTION/bin/rstudio & 
+      /opt/rstudio/$RSTUDIO_SELECTION/bin/rstudio 2>/dev/null & 
    fi
 fi
