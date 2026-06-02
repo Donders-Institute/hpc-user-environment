@@ -55,7 +55,8 @@ function mailing {
    echo "Yours,"
    echo "$username."
    # sending email
-   )  | mail -s "Request walltime extension for ${username}" ${CLUSTER_ADMINS}
+   )  | mail -s "Request walltime extension for ${username}" edwger
+#   )  | mail -s "Request walltime extension for ${username}" ${CLUSTER_ADMINS}
 
    /bin/yad --title "Sending email to helpdesk" \
             --width=400 \
