@@ -145,10 +145,21 @@ fi
 #    module unload rstudio
 #fi
 
-#torque_run_guiapp RStudio /opt/rstudio/$RSTUDIO_SELECTION/bin/rstudio
-if [[ "${RSTUDIO_SELECTION%%.*}" -ge 2024 ]]
-then
-   run_guiapp RStudio /opt/rstudio/$RSTUDIO_SELECTION/rstudio guimenu
+if [ -z $SLURM_JOBID ]; then
+   #torque_run_guiapp RStudio /opt/rstudio/$RSTUDIO_SELECTION/bin/rstudio
+   if [[ "${RSTUDIO_SELECTION%%.*}" -ge 2024 ]]
+   then
+      run_guiapp RStudio /opt/rstudio/$RSTUDIO_SELECTION/rstudio guimenu
+   else
+      run_guiapp RStudio /opt/rstudio/$RSTUDIO_SELECTION/bin/rstudio guimenu  
+   fi
 else
-   run_guiapp RStudio /opt/rstudio/$RSTUDIO_SELECTION/bin/rstudio guimenu  
+   if [[ "${RSTUDIO_SELECTION%%.*}" -ge 2024 ]]
+   then
+      echo "Starting RStudio gui App..."
+      /opt/rstudio/$RSTUDIO_SELECTION/rstudio &
+   else
+      echo "Starting RStudio gui App..."
+      /opt/rstudio/$RSTUDIO_SELECTION/bin/rstudio & 
+   fi
 fi
