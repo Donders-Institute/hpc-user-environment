@@ -116,5 +116,10 @@ if [ "$DEFAULT_VERSION" != "$SPYDER_SELECTION" ]; then
     module load $SPYDER_SELECTION
 fi
 
-#torque_run_guiapp RStudio /opt/rstudio/$RSTUDIO_SELECTION/bin/rstudio
-run_guiapp SPYDER spyder guimenu
+if [ -z $SLURM_JOBID ]; then
+    #torque_run_guiapp RStudio /opt/rstudio/$RSTUDIO_SELECTION/bin/rstudio
+    run_guiapp SPYDER spyder guimenu
+else
+    echo "Starting spyder gui App..."
+    spyder 2>/dev/null &
+fi
