@@ -40,24 +40,24 @@ function job_memory_info {
     | awk -F" " '{ print $2 }'
 }
 
-function job_timeout_alert {
-
-   tsecs=$1
-   tstr=$( printf '%d hours %d minutes %d seconds' $((tsecs%86400/3600)) $((tsecs%3600/60)) $((tsecs%60)) )
-
-   /usr/bin/yad \
-      --title "JOBinfo for ${JOB%%.*}" \
-      --width=400 \
-      --height=120 \
-      --on-top \
-      --center \
-      --buttons-layout=center \
-      --text-align=center \
-      --fontname="Sans Bold 20" \
-      --text "Your job with jobID ${SLURM_JOBID}\n\nwill be terminated in
-<b>${tstr}</b>" \
-      --button=yad-ok &
-}
+#function job_timeout_alert {
+#
+#   tsecs=$1
+#   tstr=$( printf '%d hours %d minutes %d seconds' $((tsecs%86400/3600)) $((tsecs%3600/60)) $((tsecs%60)) )
+#
+#   /usr/bin/yad \
+#      --title "JOBinfo for ${JOB%%.*}" \
+#      --width=400 \
+#      --height=120 \
+#      --on-top \
+#      --center \
+#      --buttons-layout=center \
+#      --text-align=center \
+#      --fontname="Sans Bold 20" \
+#      --text "Your job with jobID ${SLURM_JOBID}\n\nwill be terminated in
+#<b>${tstr}</b>" \
+#      --button=yad-ok &
+#}
 
 # Main progressbars function
 function info {
@@ -72,8 +72,8 @@ function info {
    alert1=0
    alert2=0
 
-   fourhour=14400
-   onehour=3600
+#   fourhour=14400
+#   onehour=3600
 
    # YAD progress bars loop start here
    while [ $elapsed_walltime -lt $requested_walltime ]; do
@@ -86,15 +86,15 @@ function info {
       elapsed_walltime=${walltime_info[1]}
       remaining_walltime=$(( $requested_walltime - $elapsed_walltime ))
 
-      if [[ $remaining_walltime -le ${fourhour} && $alert1 -lt 1 && $requested_walltime -gt ${fourhour} ]]; then
-         job_timeout_alert $remaining_walltime
-         alert1=1
-      fi
-
-      if [[ $remaining_walltime -le ${onehour} && $alert2 -lt 1 && $requested_walltime -gt ${onehour} ]]; then
-         job_timeout_alert $remaining_walltime
-         alert2=1
-      fi
+#      if [[ $remaining_walltime -le ${fourhour} && $alert1 -lt 1 && $requested_walltime -gt ${fourhour} ]]; then
+#         job_timeout_alert $remaining_walltime
+#         alert1=1
+#      fi
+#
+#      if [[ $remaining_walltime -le ${onehour} && $alert2 -lt 1 && $requested_walltime -gt ${onehour} ]]; then
+#         job_timeout_alert $remaining_walltime
+#         alert2=1
+#      fi
 
       # Calculate percent
       WALLPERCENT=$((100*elapsed_walltime/requested_walltime))
@@ -120,12 +120,14 @@ function info {
          --bar="Memory usage    ":NORM \
          --bar="Max memory usage":NORM \
          --button="Terminate this Slurm JOBID: ${SLURM_JOBID}":"scancel ${SLURM_JOBID}" \
-         --button='Request jobtime extension:/bin/bash -c "$CLUSTER_UTIL_ROOT/bin/slurm/yadextend-jobtime"' \
          --buttons-layout=center \
          --auto-close \
          --auto-kill &
    echo "Job info started..."
 }
+# put this line below Terminate this Slurm JOBID in yadjobinfo menu if you want
+# to use the yadextend-jobtime functionality
+#         --button='Request jobtime extension:/bin/bash -c "$CLUSTER_UTIL_ROOT/bin/slurm/yadextend-jobtime"' \
 
 ###############################
 ### M A I N   P R O G R A M ###
