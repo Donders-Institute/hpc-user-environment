@@ -27,7 +27,7 @@ function megabytes {
 }
 
 # Main progressbars function
-function info(){
+function tab_jobinfo(){
    (
    # This contains the completely rewritten function for displaying 
    # 3 yad progress bars for (max-)memory usage and walltime in one window
@@ -127,30 +127,45 @@ function info(){
 
    done
    ) |
-      /bin/yad --geometry=470x140-1+0 \
-      --no-focus \
-      --kill-parent \
-      --title "JOBinfo for ${JOB%%.*}" \
-      --text "Exec node:\t\t<b>$SLURM_NODELIST</b>" \
-      --multi-progress \
+      /bin/yad \
+      --plug=${SLURM_JOBID} \
+      --tabnum=1 \
       --progress \
+      --multi-progress \
+      --text "Exec node:\t\t<b>$SLURM_NODELIST</b>" \
       --percentage=0 \
       --bar="Elapsed Walltime":NORM \
       --bar="Memory usage    ":NORM \
-      --bar="Max memory usage":NORM \
-      --button="Terminate this Slurm JOBID: ${SLURM_JOBID}":"scancel ${SLURM_JOBID}" \
-      --buttons-layout=center \
-      --auto-close \
-      --auto-kill &
+      --bar="Max memory usage":NORM &
 
 # Here the info() function ends
 }
 
+function tab_walltime_extension {
+    hourMin=9
+    hourMax=16
+    while true; do
+        now_hour=$(date +%H)
+        if [[ $now_hour -gt $hourMin && $now_hour -lt $hourMax ]]; then
+    	    echo echo call request dialog
+	else
+            echo @disabled@
+	fi
+    done \
+    | /bin/yad \
+      --plug=${SLURM_JOBID} \
+      --text="You may request for walltime extension when the remaining walltime is less than 4 hours and between ${hourMin}:00 and ${hourMax}:00" \
+      --tabnum=2 \
+      --form \
+      --field="":LBL \
+      --field="Extend walltime":FBTN \
+      --cycle-read &
+}
 
 
-      ###############################
-      ### M A I N   P R O G R A M ###
-      ###############################
+###############################
+### M A I N   P R O G R A M ###
+###############################
 
 # ENVIRONMENT SETTING
 export NO_AT_BRIDGE=1
@@ -225,7 +240,21 @@ echo Requested Memory in bytes: $reqmem # Needed for memory usage calculation
 if [ -e /usr/bin/yad ]
 then
    # Here goes the actual yad meminfo-/progress-bar function info with args
-   info $wt_list_secs $reqmem
+   tab_jobinfo $wt_list_secs $reqmem
+   tab_walltime_extension
+
+   /bin/yad --geometry=470x140-1+0 \
+      --no-focus \
+      --kill-parent \
+      --title "JOBinfo for ${JOB%%.*}" \
+      --notebook \
+      --key=${SLURM_JOBID} \
+      --tab="JobInfo" \
+      --tab="Walltime Extension" \
+      --button="Terminate this Slurm JOBID: ${SLURM_JOBID}":"scancel ${SLURM_JOBID}" \
+      --buttons-layout=center \
+      --auto-close \
+      --auto-kill &
 
    # Supply some extra info after the progress-bars start..
    echo "Job info started..."
