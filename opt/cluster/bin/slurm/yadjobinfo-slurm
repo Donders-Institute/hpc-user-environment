@@ -4,6 +4,9 @@
 # for walltime and memory
 #
 # 20230817: edwger - initial start
+# 20260226: edwger - complete rewrite by adding funcionality and better
+#                    ways to determine walltime seconds which prevents
+#                    a lot of conversions of the way of time presentation 
 #
 
 function display_usage() {
@@ -32,20 +35,20 @@ function info(){
    # This contains the completely rewritten function for displaying 
    # 3 yad progress bars for (max-)memory usage and walltime in one window
 
-   # Read all given arguments with function info
+   # Read all initial given start arguments with function info from main
    # info $wt_list_secs $reqmem
    secs=$1 # seconds needed for walltime
    # echo seconden=$secs
    requested=$2 # initial requested memory for job
    # echo requested=$requested
 
-   # Initial walltime setting for YAD progressbar functions
-   STARTMEM=$requested
-   echo startmem=$STARTMEM
-   # Initial memory setting for YAD progressbar funtions
+   # Initial walltime/memory setting for YAD progressbar functions
    STARTSECS=$secs
-   echo startsecs=$STARTSECS
+   #echo startsecs=$STARTSECS
    # Name of this var sounds pretty weird, but hey, whats in a name ;-)
+   STARTMEM=$requested
+   #echo startmem=$STARTMEM
+   # Initial memory setting for YAD progressbar funtions
 
    # YAD progress bars loop start here
    while [ "$secs" -gt "0" ]
@@ -53,38 +56,68 @@ function info(){
       #################################################
       ### S E T T I N G S   F O R   W A L L T I M E ###
       #################################################
-
-      # Settings for seconds adjustments in remaining walltime
-      wt_rem=$(squeue --jobs $SLURM_JOB_ID -o "%L" | sed '1d')
-
-      # squeue displays time as #days-##:##:##, ##:## or ##
-      # secs must be calculated accordingly by counting number of colons
-      # but also number of days before minus sign
-      # #days-##:##:## has number of days times 24 hours + two colons,
-      # ##:## has one, ## has none
-      # first check if number of days is set (minus-sign is present in wt_rem)
-      if [ $(echo $wt_rem | grep "-") ]
-      then
-         # days before minus character is set
-         # converting string to ##:##:##
-         days=$(echo $wt_rem | cut -d- -f 1)
-         initial_hours=$(echo $wt_rem | grep -oP '(?<=[-])[^:]*')
-         hours=$(echo $(($days*24+10#$initial_hours)))
-         minutes=$(echo $wt_rem | awk -F: '{ print $2 }')
-         seconds=$(echo $wt_rem | awk -F: '{ print $3 }')
-         wt_rem=$(echo $hours:$minutes:$seconds)
-      fi
-
-      # convert all to seconds (including #days times 24hrs if available)
       
-      if [ $(echo $wt_rem | awk -F\: '{print NF-1}') -eq "2" ]
+      # If walltime changed interactively the STARTSECS value changes
+      # Keep checking the initial walltime request
+      # It might change after walltime extension and then
+      # the walltime progress bar percentage is no longer 
+      # correct.
+      
+      # Get NEW Initial requested walltime in seconds: $nw_wt_list_secs
+      nw_wt_list_secs=$(sacct -j $SLURM_JOBID --format=TimeLimitRaw -n | head -n1 | awk '{ print $1 * 60 }')
+
+      # check for changes in requested walltime
+      if [[ $nw_wt_list_secs -ne $STARTSECS ]]
       then
-         secs=$(echo $wt_rem | awk -F\: '{ print ($1 * 3600) + ($2 * 60) + $3 }')
-      elif [ $(echo $wt_rem | awk -F\: '{print NF-1}') -eq "1" ]
+         #echo Old job start in seconds: $STARTSECS
+         export STARTSECS=$nw_wt_list_secs
+         #echo NEW job start in seconds: $STARTSECS
+      fi
+      
+      # Settings for seconds adjustments in remaining walltime
+      # Get elapsed walltime in seconds
+      secs=$(sacct -j $SLURM_JOBID --format=ElapsedRaw -n | head -1)
+
+      #####################################################
+      ### G E N E R A T E   E X T R A   W A R N I N G S ###
+      #####################################################
+
+      if [[ $(echo $(squeue -j -h $SLURM_JOBID -o "%.9L")) == "1:00:00" ]]
       then
-	 secs=$(echo $wt_rem | awk -F\: '{ print ($1 * 60) + $2 }')
-      else
-         secs=$wt_rem 
+         /bin/yad --title "JOBinfo for ${JOB%%.*}" \
+         --width=400 \
+         --height=120 \
+         --on-top \
+         --center \
+         --buttons-layout=center \
+         --text-align=center \
+         --fontname="Sans Bold 20" \
+         --text "Your job with jobID ${SLURM_JOBID}\n\nwill be terminated in <b>1 hour</b>" \
+         --button=yad-ok &
+      elif [[ $(echo $(squeue -j -h $SLURM_JOBID -o "%.9L")) == "30:00" ]]
+      then
+         /bin/yad --title "JOBinfo for ${JOB%%.*}" \
+         --width=400 \
+         --height=120 \
+         --on-top \
+         --center \
+         --buttons-layout=center \
+         --text-align=center \
+         --fontname="Sans Bold 20" \
+         --text "Your job with jobID ${SLURM_JOBID}\n\nwill be terminated in <b>30 minutes</b>" \
+         --button=yad-ok &
+      elif [[ $(echo $(squeue -j -h $SLURM_JOBID -o "%.9L")) == "5:00" ]]
+      then
+         /bin/yad --title "JOBinfo for ${JOB%%.*}" \
+         --width=400 \
+         --height=120 \
+         --on-top \
+         --center \
+         --buttons-layout=center \
+         --text-align=center \
+         --fontname="Sans Bold 20" \
+         --text "Your job with jobID ${SLURM_JOBID}\n\nwill be terminated in <b>5 minutes</b>" \
+         --button=yad-ok &
       fi
 
       #############################################
@@ -92,19 +125,15 @@ function info(){
       #############################################
 
       # Settings for memory adjustments
+      # Mem and MaxUsed Mem are taken from cgroups info
 
       used=$(cgget -r memory.memsw.usage_in_bytes /slurm/uid_$SLURM_JOB_UID/job_$SLURM_JOB_ID | sed '1d;$d' | awk -F" " '{ print $2 }')
       max_used=$(cgget -r memory.memsw.max_usage_in_bytes /slurm/uid_$SLURM_JOB_UID/job_$SLURM_JOB_ID | sed '1d;$d' | awk -F" " '{ print $2 }')
-## Store max used memomry in var
-      #if [ "$maxused" -lt "$used" ]
-      #then
-      #   maxused=$used
-      #fi
-
+      
       # All YAD progressbar stuff goes here
 
       # Calculate percent
-      WALLPERCENT=$((100-100*secs/STARTSECS))
+      WALLPERCENT=$((100*secs/STARTSECS))
       MEMPERCENT=$((100*used/STARTMEM))
       MAXMEMPERCENT=$((100*max_used/STARTMEM))
 
@@ -139,14 +168,13 @@ function info(){
       --bar="Memory usage    ":NORM \
       --bar="Max memory usage":NORM \
       --button="Terminate this Slurm JOBID: ${SLURM_JOBID}":"scancel ${SLURM_JOBID}" \
+      --button="Request walltime extension":"/bin/bash -c /opt/cluster/bin/slurm/yadextend-walltime > /dev/null 2>&1" \
       --buttons-layout=center \
       --auto-close \
       --auto-kill &
 
 # Here the info() function ends
 }
-
-
 
       ###############################
       ### M A I N   P R O G R A M ###
@@ -186,24 +214,8 @@ fi
 ### 1: GET WALLTIME INFO for WALLTIME PROGRESS BAR ###
 ######################################################
 
-export wt_list=$(squeue -j $SLURM_JOB_ID -h --Format TimeLimit)
-#echo $wt_list
-
-# Convert ##:##:## notification to seconds
-# squeue displays time as ##:##:##, ##:## !!!DEFAULT IS MINUTES!!!
-# secs must be calculated accordingly by counting number of colons
-# ##:##:## has two colons, ##:## has one !!!MINIMUM IS ALWAYS ONE!!!
-if [ $(echo $wt_list | grep "-") ]
-then
-   export wt_list_secs=$(echo $wt_list | awk -F: '{ print ($1 * 24 * 3600) + ($2 * 60) + $3 }')
-elif [ $(echo $wt_list | awk -F\: '{print NF-1}') -eq "2" ]
-then
-   export wt_list_secs=$(echo $wt_list | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }')
-else
-   export wt_list_secs=$(echo $wt_list | awk -F: '{ print ($1 * 60) + $2 }')
-fi
+export wt_list_secs=$(sacct -j $SLURM_JOBID --format=TimeLimitRaw -n | head -n1 | awk '{ print $1 * 60 }')
 #echo $wt_list_secs
-
 
 ##################################################
 ### 2: GET MEMORY INFO for MEMORY PROGRESS BAR ###
@@ -212,7 +224,6 @@ fi
 # Find out the requested memory specification with qsub and convert to bytes
 export reqmem=$(cgget -r memory.memsw.limit_in_bytes /slurm/uid_$SLURM_JOB_UID/job_$SLURM_JOB_ID | sed '1d;$d' | awk -F" " '{ print $2 }')
 #echo $reqmem
-
 
 ######################################################################
 ### 3: WE END UP WITH 2 VARIABLES WHICH ARE NEEDED AS ARGUMENTS TO ###
