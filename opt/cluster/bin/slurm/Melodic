@@ -112,9 +112,8 @@ if [ "$DEFAULT_VERSION" != "$MELODIC_SELECTION" ]; then
 fi
 
 if [ -z $SLURM_JOBID ]; then
-#torque_run_guiapp RStudio /opt/rstudio/$RSTUDIO_SELECTION/bin/rstudio
-run_guiapp FSL/Melodic /opt/fsl/$MELODIC_SELECTION/bin/Melodic guimenu
+    run_guiapp FSL/Melodic /opt/fsl/$MELODIC_SELECTION/bin/Melodic guimenu
 else
     echo "Starting Melodic gui App..."
-    /opt/fsl/$MELODIC_SELECTION/bin/Melodic &
+    $FSLDIR/bin/Melodic &
 fi

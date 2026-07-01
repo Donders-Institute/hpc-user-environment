@@ -112,9 +112,9 @@ if [ "$DEFAULT_VERSION" != "$FREEVIEW_SELECTION" ]; then
 fi
 
 if [ -z $SLURM_JOBID ]; then
-    #torque_run_guiapp RStudio /opt/rstudio/$RSTUDIO_SELECTION/bin/rstudio
     run_guiapp Freesurfer/freeview /opt/freesurfer/$FREEVIEW_SELECTION/bin/freeview guimenu $@
 else
     echo "Starting freeview gui App..."
+    echo $PATH
     /opt/freesurfer/$FREEVIEW_SELECTION/bin/freeview $@ 2>/dev/null &
 fi

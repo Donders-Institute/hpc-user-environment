@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# shell script to start FSL as a torque job
+# shell script to start FSL as a slurm job
 #
 # 20170626 edwger: do NOT reload module is one is already loaded
 # 20170413 edwger: check for eventually loaded module
