@@ -145,6 +145,7 @@ fi
 #    module unload rstudio
 #fi
 
+
 if [ -z $SLURM_JOBID ]; then
     run_guiapp RStudio $(which rstudio) guimenu
 else

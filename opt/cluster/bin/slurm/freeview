@@ -111,6 +111,7 @@ if [ "$DEFAULT_VERSION" != "$FREEVIEW_SELECTION" ]; then
     module load freesurfer/$FREEVIEW_SELECTION
 fi
 
+
 if [ -z $SLURM_JOBID ]; then
     run_guiapp Freesurfer/freeview /opt/freesurfer/$FREEVIEW_SELECTION/bin/freeview guimenu $@
 else

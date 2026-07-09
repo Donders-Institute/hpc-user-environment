@@ -48,6 +48,7 @@ module unload pycharm > /dev/null 2>&1
 # Load the selected R-module for R-environment
 module load pycharm/$PYCHARM_SELECTION
 
+
 if [ -z $SLURM_JOBID ]; then
     # start the pycharm via a job
     MEM=6 run_guiapp PyCharm $PYCHARM_BIN guimenu

@@ -111,6 +111,7 @@ if [ "$DEFAULT_VERSION" != "$MELODIC_SELECTION" ]; then
     module load fsl/$MELODIC_SELECTION
 fi
 
+
 if [ -z $SLURM_JOBID ]; then
     run_guiapp FSL/Melodic /opt/fsl/$MELODIC_SELECTION/bin/Melodic guimenu
 else

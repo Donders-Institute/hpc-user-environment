@@ -116,6 +116,7 @@ if [ "$DEFAULT_VERSION" != "$SPYDER_SELECTION" ]; then
     module load $SPYDER_SELECTION
 fi
 
+
 if [ -z $SLURM_JOBID ]; then
     run_guiapp SPYDER spyder guimenu
 else

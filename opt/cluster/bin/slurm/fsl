@@ -111,6 +111,7 @@ if [ "$DEFAULT_VERSION" != "$FSL_SELECTION" ]; then
     module load fsl/$FSL_SELECTION
 fi
 
+
 if [ -z $SLURM_JOBID ]; then
     #torque_run_guiapp RStudio /opt/rstudio/$RSTUDIO_SELECTION/bin/rstudio
     run_guiapp FSL /opt/fsl/$FSL_SELECTION/bin/fsl guimenu
