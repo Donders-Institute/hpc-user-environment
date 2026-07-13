@@ -56,24 +56,6 @@
 # 18feb2026 - honlee: removed allowance check with `matlabXX-check`
 #
 
-function get_script_dir() {
-    ## resolve the base directory of this executable
-    local SOURCE=$1
-    while [ -h "$SOURCE" ]; do
-        # resolve $SOURCE until the file is no longer a symlink
-        DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
-        SOURCE="$(readlink "$SOURCE")"
-
-        # if $SOURCE was a relative symlink,
-        # we need to resolve it relative to the path
-        # where the symlink file was located
-
-        [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
-    done
-
-    echo "$( cd -P "$( dirname "$SOURCE" )" && pwd )"
-}
-
 ##############################################################################
 # determine the MATLAB version taking into account the cases below
 #  - if the script name indicate the version, always use it
@@ -87,53 +69,30 @@ if [ ! -z $v ] && [ $v == 'XX' ]; then
     v=""
 fi
 
+# load helper functions
+source $CLUSTER_UTIL_ROOT/share/cluster-lib.sh
+
 mydir=`get_script_dir $0`
 
 # check if environment module is configured
-use_local_mod=0
 module list > /dev/null 2>&1
 if [ $? -ne 0 ]; then
-    use_local_mod=1
     source $mydir/../../_modules/setup.sh
     module load cluster
 fi
-
-# load helper functions
-source $CLUSTER_UTIL_ROOT/share/matlabXX-lib.sh
-source $CLUSTER_UTIL_ROOT/share/cluster-lib.sh
 
 # determin the matlab version to use
 if [ ! -z $v ]; then
     # the version indicated by the name of the script
     MATLAB_MODULE="matlab/R${v}"
 else
-    if [ $use_local_mod -eq 0 ]; then
-        # the version pre-loaded by user externally
-        MATLAB_MODULE=`getLoadedMatlabModuleFromEnv $LOADEDMODULES`
-    else
-        # take the default version
-        MATLAB_MODULE="matlab"
-    fi
+    MATLAB_MODULE=$(module_loaded_or_default "matlab")
 fi
 
-# use the short hostname
-HOSTNAME=`hostname -s`
-
-##############################################################################
-# determine the options for Torque
-# MATLAB uses either a single thread  or all threads in a machine
-# Torque expects MATLAB to use a single thread, hence this option
-##############################################################################
-
-NOX11TUNNEL=$(basename $0 | grep noX11tunnel)
-ACCESSNODE=$(echo $HOSTNAME | egrep 'mentat[0-9]+(c)?')
+ACCESSNODE=$(hostname -s | egrep 'mentat[0-9]+(c)?')
 
 if [ -n "$ACCESSNODE" ]; then
     # The following section applies only HPC access nodes and toolkit nodes
-
-    # Call the rem_walltime function and use the var remaining_walltime below in the
-    # dialog to the user.
-    remaining_walltime=`rem_walltime`
 
     if [ -z $DISPLAY ]; then
         # Exit with error-message if display variable is not set
@@ -148,14 +107,13 @@ if [ -n "$ACCESSNODE" ]; then
         exit 0
     fi
 
-    # Get Torque arguments -r or -x, if incorrect exit
+    # Get arguments -r, if incorrect exit
     MATLAB_ARGUMENTS=""
     if [ $# -gt 0 ]; then
         if [[ $1 == -* ]]; then
-            while getopts r:x option; do
+            while getopts r: option; do
                 case "${option}" in
                     r) MATLAB_ARGUMENTS="${OPTARG}";;
-                    x) IMMEDIATE_EXECUTE=TRUE;;
                     ?) echo "Unexpected matlab input argument, only -r option is allowed."; exit 1;;
                 esac
             done
@@ -165,79 +123,20 @@ if [ -n "$ACCESSNODE" ]; then
         fi
     fi
 
-    if [ $IMMEDIATE_EXECUTE ]; then
-        #echo "here we should execute immediately!!!!"
-        echo
-        echo -e "\033[1mCongratulations dear researcher!\033[0m"
-        echo -e "\033[1mYou discovered our secret, undocumented, -x script argument! ;-)\033[0m"
-        echo
-        echo -e "By using the -x argument you automatically \033[1mFULLY agree\033[0m to all the choices"
-        echo "for jobname, walltime and memory made for you by the DCCN TG!"
-        echo
-        echo "As an extra bonus for well done research discovering this secret"
-        echo -e "option you will get an \033[1mEXTRA\033[0m GigaByte of memory ;-)!"
-        echo
-        echo -e "Happy matlabbing... and \033[1mPSSST, don't tell anyone...\033[0m"
-        echo
-
-        make_display
-        module load $MATLAB_MODULE
-
-        WALLTIME=`rem_walltime`
-        MEM="4gb"
-        name_guiapp="MATLAB"
-        trq_queue="interactive"
-        MATLABCMD="$MATLAB_BIN -desktop -singleCompThread -display $DISPLAY"
-        if [ ! -z "$MATLAB_ARGUMENTS" ]
-        then
-            echo Running matlab script: $MATLAB_ARGUMENTS
-            MATLABCMD="$MATLAB_BIN -desktop -singleCompThread -r $MATLAB_ARGUMENTS -display $DISPLAY"
-        fi
-
-        RESRC_REQUIREMENT="--nodes=1 --ntasks-per-node=1 --x11 --mem=$MEM --time=$WALLTIME"
-
-        echo
-        echo Requesting immediate interactive MATLAB torque job using:
-
-        echo "source $DCCN_MOD_DIR/setup.sh; module load $MATLAB_MODULE; $MATLABCMD"
-
-        echo
-        echo -e "\033[1mSubmitting job for interactive $name_guiapp session ... \033[0m"
-
-        echo "srun ${KEEPOE} --job-name=${name_guiapp} ${RESRC_REQUIREMENT} --partition=$trq_queue $cmd_guiapp ${MATLABCMD}"
-        srun ${KEEPOE} --job-name=${name_guiapp} ${RESRC_REQUIREMENT} --partition=$trq_queue $cmd_guiapp
-
-        exit 0
-    fi
-
     $CLUSTER_UTIL_ROOT/bin/slurm/matlab-slurm-menu $MATLAB_MODULE $MATLAB_ARGUMENTS
-    exit 0
-
-elif [ -n "$NOX11TUNNEL" ]; then
-    # try to circumvent the tunneling of X11 over ssh
-    if  [ "XX$SSH_CLIENT" = "XX" ]; then
-        echo "Unable to detect ssh client origin"
-        exit 1
-    else
-        IP=`echo "$SSH_CLIENT" | cut -d " " -f 1`
-        DISPLAYOPTIONS=" -display $IP:0 "
-    fi
 else
-    # nothing special was requested
-    DISPLAYOPTIONS=""
+    ##############################################################################
+    # start the desired matlab version on the node
+    ##############################################################################
+
+    OTHEROPTIONS=$*
+
+    echo "Starting $MATLAB_MODULE"
+
+    ## load proper matlab module to get MATLAB_BIN variable
+    module unload matlab > /dev/null 2>&1
+    module load $MATLAB_MODULE > /dev/null 2>&1
+
+    echo Executing $MATLAB_BIN $OTHEROPTIONS
+    exec $MATLAB_BIN $OTHEROPTIONS
 fi
-
-##############################################################################
-# start the desired matlab version
-##############################################################################
-
-OTHEROPTIONS=$*
-
-echo "Starting $MATLAB_MODULE"
-
-## load proper matlab module to get MATLAB_BIN variable
-module unload matlab > /dev/null 2>&1
-module load $MATLAB_MODULE > /dev/null 2>&1
-
-echo Executing $MATLAB_BIN $DISPLAYOPTIONS $OTHEROPTIONS
-exec $MATLAB_BIN $DISPLAYOPTIONS $OTHEROPTIONS

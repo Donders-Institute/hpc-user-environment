@@ -16,7 +16,7 @@
 # edwger - 07may2026: check matlab script file(s) for hyphens in filename
 
 # load helper functions 
-source $CLUSTER_UTIL_ROOT/share/matlabXX-lib.sh
+source $CLUSTER_UTIL_ROOT/share/cluster-lib.sh
 
 usage() {
 cat << EOF
@@ -83,8 +83,7 @@ if [ ! -z "$HELP" ]; then
 fi
 
 # get matlab module
-#MATLAB_MODULE=`getLoadedMatlabModule`
-MATLAB_MODULE=`getLoadedMatlabModuleFromEnv $LOADEDMODULES`
+MATLAB_MODULE=$( module_loaded_or_default "matlab" )
 
 echo $MATLAB_MODULE
 

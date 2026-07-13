@@ -31,19 +31,10 @@ do
         MATLAB_AVAIL+=("${version}")
     fi
 done
-#echo Available MATLAB versions: ${MATLAB_AVAIL[*]}
-#echo Number of available MATLAB versions: ${#MATLAB_AVAIL[@]}
-#echo ${MATLAB_AVAIL[1]}
-#echo "${MATLAB_AVAIL[*]}"
 
 # Put available MATLAB versions in reverse order (latest first)
-#TMP_MATLABAVAIL=$(echo "${MATLAB_AVAIL[*]}")
 n=${#MATLAB_AVAIL[@]}
 MATLAB_AVAIL_REVERSE=`for (( i = n-1; i >= 0; i-- )); do echo -n "${MATLAB_AVAIL[i]},"; done`
-
-# YAD example
-#holidays=$(echo "Gold Coast,Bali,Phuket,Sydney,other")
-#yad --title="My YAD Test" --text="Please enter your details:" --image="/usr/share/icons/phone.png" --form --date-format="%-d %B %Y" --separator="," --item-separator="," --field="First Name" --field="Last Name" --field="Status":RO --field="Date of birth":DT --field="Last holiday":CBE --field="List your 3 favourite foods:":TXT "" "" "All round good guy" "Click calendar icon" "$holidays"
 
 SELECTION=$(yad \
     --center \
@@ -63,22 +54,15 @@ SELECTION=$(yad \
     --field="Scriptname:" \
     "$MATLAB_AVAIL_REVERSE" "" "" "" "$USER_SCRIPT_PATH")
 ret=$?
-#echo $ret
+
 if [[ $ret -eq 1 ]] || [[ $ret -eq 252 ]]
 then
     echo "Command Cancelled"; exit 0
 fi
 
-#echo $SELECTION
-
 IFS=' ' read -r -a CHOICES <<< $SELECTION
 MATLAB_SELECTION=$(echo ${CHOICES[0]})
 _SCRIPTNAME=$(echo ${CHOICES[1]})
-#echo MATLAB-version: $MATLAB_SELECTION
-#echo Scriptname: $_SCRIPTNAME
-
-#echo MATLAB-version: matlab/$MATLAB_SELECTION
-#echo Loaded-module:  matlab/$DEFAULT_VERSION
 
 # If the menu selection equals the installed matlab module do NOT 
 # unload and reload modules!
@@ -111,5 +95,5 @@ echo
 echo Will start matlab/$MATLAB_SELECTION ...
 echo Full command:
 echo $MATLABCMD
-#run_guiapp RStudio /opt/rstudio/$RSTUDIO_SELECTION/bin/rstudio
+
 MEM=6 run_guiapp MATLAB "$MATLABCMD" guimenu
