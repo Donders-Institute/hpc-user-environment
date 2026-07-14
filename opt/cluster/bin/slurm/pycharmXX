@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# shell script to start rstudio as a slurm job
+# shell script to start pycharm as a slurm job or OOD binary
 
 # load helper functions
 source $CLUSTER_UTIL_ROOT/share/cluster-lib.sh
@@ -54,6 +54,6 @@ if [ -z $SLURM_JOBID ]; then
     MEM=6 run_guiapp PyCharm $PYCHARM_BIN guimenu
 else
     echo "Starting PyCharm gui App..."
-    $PYCHARM_BIN &
+    $PYCHARM_BIN 2>/dev/null &
 fi
 
