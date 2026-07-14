@@ -1,11 +1,13 @@
 #!/bin/bash
 #
-# shell script to start Freesurfer/freeview as a torque job
+# shell script to start Freesurfer/freeview
 #
+# 20260714 edwger: add condition start from VNC mentat (slurm job) or
+#                  within (interactive) OOD VNC (binary start)
 # 20170626 edwger: do NOT reload module is one is already loaded
 # 20170425 edwger: check for eventually loaded module
-# 20170217 edwger: initial torque wrapperscript
-#
+# 20170217 edwger: initial wrapperscript
+
 
 # load helper functions
 source $CLUSTER_UTIL_ROOT/share/cluster-lib.sh
@@ -116,6 +118,5 @@ if [ -z $SLURM_JOBID ]; then
     run_guiapp Freesurfer/freeview /opt/freesurfer/$FREEVIEW_SELECTION/bin/freeview guimenu $@
 else
     echo "Starting freeview gui App..."
-    echo $PATH
     /opt/freesurfer/$FREEVIEW_SELECTION/bin/freeview $@ 2>/dev/null &
 fi
