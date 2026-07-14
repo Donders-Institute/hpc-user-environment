@@ -75,6 +75,17 @@ function extramatlabs()
 	done
 }
 
+#---------------------------------------------------------------------#
+# ensure_environment_module: check and make sure environment module is configured   #
+#---------------------------------------------------------------------#
+function ensure_environment_module() {
+    # check if environment module is configured
+    module list > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        source $mydir/../../_modules/setup.sh
+        module load cluster
+    fi
+}
 
 #---------------------------------------------------------------------#
 # get_script_dir: resolve absolute directory in which the current     #
@@ -116,7 +127,7 @@ function module_loaded_or_default() {
             | sort -r \
             | head -n 1 )
 
-    [ "$m" == "" ] && echo $app || echo $m
+    [ "$m" == "" ] && echo "$app/$(module_default_version $app)" || echo $m
 }
 
 #---------------------------------------------------------------------#
@@ -147,6 +158,7 @@ function module_default_version() {
 #---------------------------------------------------------------------#
 function module_avail_versions() {
     local app=$1
+    local excluded=("${@:2}")
     local loaded=$(module_loaded_version $app)
     local default=$(module_default_version $app)
 
@@ -154,6 +166,14 @@ function module_avail_versions() {
     [ "$loaded" != "" ] && default=$loaded
 
     module -t avail ${app} 2>&1 | egrep "^${app}/" | sed "s|${app}/||g" | sed 's/(default)//g' | sort -r | while read l; do
+
+        # check if the version is in the excluded list
+        for ex in "${excluded[@]}"; do
+            if [ "$l" == "$ex" ]; then
+                continue 2
+            fi
+        done
+
         # print out all available versions, excluding the default
         [ "$l" != "$default" ] && echo "${l}" || echo "^${l}"
     done
