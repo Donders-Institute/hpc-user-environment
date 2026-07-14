@@ -37,16 +37,16 @@ then
 fi
 
 IFS=' ' read -r -a CHOICES <<< $SELECTION
-NOTEBOOK_SELECTION=$(echo ${CHOICES[0]})
+VERSION=$(echo ${CHOICES[0]})
 
 module unload anaconda anaconda2 anaconda3 > /dev/null 2>&1
 
-echo "Loading module anaconda3/$NOTEBOOK_SELECTION ..."
-module load anaconda3/$NOTEBOOK_SELECTION
+echo "Loading module anaconda3/$VERSION ..."
+module load anaconda3/$VERSION
 
 if [ -z $SLURM_JOBID ]; then
     run_guiapp Jupyter-$subcommand "jupyter $subcommand --ip=\$(hostname -f) --notebook-dir=\$SLURM_SUBMIT_DIR" guimenu
 else
-    echo "Starting jupyter lab gui App..."
+    echo "Starting jupyter $subcommand gui App..."
     jupyter $subcommand --ip=$(hostname -f) --notebook-dir=.
 fi
