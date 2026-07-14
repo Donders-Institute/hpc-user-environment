@@ -24,7 +24,7 @@ SELECTION=$(yad \
     --text-align=center \
     --form \
     --separator=" " \
-    --item-separator="," \
+    --item-separator="\n" \
     --field="FSL Version:":CB \
     "$(module_avail_versions 'fsl')")
 ret=$?

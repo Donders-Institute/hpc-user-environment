@@ -26,7 +26,7 @@ SELECTION=$(yad \
     --text-align=center \
     --form \
     --separator=" " \
-    --item-separator="," \
+    --item-separator="\n" \
     --field="Freeview Version:":CB \
     "$(module_avail_versions 'freesurfer' '3.0.3')")
 ret=$?
