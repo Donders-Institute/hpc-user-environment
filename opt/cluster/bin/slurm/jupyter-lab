@@ -44,6 +44,6 @@ if [ -z $SLURM_JOBID ]; then
     run_guiapp Jupyter-Lab 'jupyter lab --ip=$(hostname -f) --notebook-dir=$SLURM_SUBMIT_DIR' guimenu
 else
     echo "Starting jupyter lab gui App..."
-    jupyter lab --ip=$(hostname -f) --notebook-dir=. &
+    jupyter lab --ip=$(hostname -f) --notebook-dir=.
 fi
 
