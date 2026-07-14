@@ -8,6 +8,11 @@
 # 20170425 edwger: check for eventually loaded module
 # 20170217 edwger: initial wrapperscript
 
+function freeview_executable() {
+    [[ "$FREESURFER_HOME" != "" && -x "$FREESURFER_HOME/bin/freeview" ]] &&
+        echo "$FREESURFER_HOME/bin/freeview" ||
+        which freeview
+}
 
 # load helper functions
 source $CLUSTER_UTIL_ROOT/share/cluster-lib.sh
@@ -47,8 +52,8 @@ echo "Loading module freesurfer/$FREEVIEW_SELECTION ..."
 module load freesurfer/$FREEVIEW_SELECTION
 
 if [ -z $SLURM_JOBID ]; then
-    run_guiapp Freesurfer/freeview /opt/freesurfer/$FREEVIEW_SELECTION/bin/freeview guimenu $@
+    run_guiapp Freesurfer/freeview "$(freeview_executable)" guimenu $@
 else
     echo "Starting freeview gui App..."
-    /opt/freesurfer/$FREEVIEW_SELECTION/bin/freeview $@ 2>/dev/null &
+    "$(freeview_executable)" $@ 2>/dev/null &
 fi
