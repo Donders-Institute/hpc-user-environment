@@ -23,7 +23,7 @@ SELECTION=$(yad \
     --text-align=center \
     --form \
     --separator=" " \
-    --item-separator="," \
+    --item-separator="\n" \
     --field="Anaconda Version:":CB \
     "$(module_avail_versions 'anaconda3')")
 ret=$?
