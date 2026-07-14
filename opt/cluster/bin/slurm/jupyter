@@ -4,10 +4,10 @@
 #
 
 # determin jupyer subcommand from script name or first argument
-subcommand=$(echo $0 | sed 's/^jupyter-//g')
+subcommand=$(basename $0 | sed 's/^jupyter-//g')
+
 if [ "$subcommand" == "" ]; then
-    [ $# -lt 1 ] && echo "Missing jupyter subcommand argument" >&2 && exit 1
-    subcommand="$1"
+   subcommand=$1
 fi
 
 [[ "$subcommand" != "notebook" && "$subcommand" != "lab" ]] && echo "subcommand not supported: $subcommand" >&2 && exit 1
@@ -22,7 +22,7 @@ SELECTION=$(yad \
     --width=300 \
     --ontop \
     --buttons-layout=center \
-    --title="Jupyter-Notebook" \
+    --title="Jupyter $subcommand" \
     --text="Select desired Anaconda version:" \
     --text-align=center \
     --form \
