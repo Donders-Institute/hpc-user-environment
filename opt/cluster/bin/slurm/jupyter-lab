@@ -37,8 +37,13 @@ NOTEBOOK_SELECTION=$(echo ${CHOICES[0]})
 
 module unload anaconda anaconda2 anaconda3 > /dev/null 2>&1
 
-echo "Loading module $NOTEBOOK_SELECTION ..."
-module load $NOTEBOOK_SELECTION
+echo "Loading module anaconda3/$NOTEBOOK_SELECTION ..."
+module load anaconda3/$NOTEBOOK_SELECTION
 
-run_guiapp Jupyter-Lab 'jupyter lab --ip=$(hostname -f) --notebook-dir=$SLURM_SUBMIT_DIR' guimenu
+if [ -z $SLURM_JOBID ]; then
+    run_guiapp Jupyter-Lab 'jupyter lab --ip=$(hostname -f) --notebook-dir=$SLURM_SUBMIT_DIR' guimenu
+else
+    echo "Starting jupyter lab gui App..."
+    jupyter lab --ip=$(hostname -f) --notebook-dir=. &
+fi
 
