@@ -6,7 +6,7 @@
 # determin jupyer subcommand from script name or first argument
 subcommand=$(basename $0 | sed 's/^jupyter-//g')
 
-if [ "$subcommand" == "" ]; then
+if [ "$subcommand" == "$(basename $0)" ]; then
    subcommand=$1
 fi
 
