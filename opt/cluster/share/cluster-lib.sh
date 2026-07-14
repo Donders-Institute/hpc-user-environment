@@ -99,6 +99,27 @@ function get_script_dir() {
 }
 
 #---------------------------------------------------------------------#
+# module_loaded_or_default: gets the name of a given module.          #
+#                                                                     #
+# - the specific module name if it is currently loaded, or            #
+# - the default module name if it is not currently loaded.            #
+#---------------------------------------------------------------------#
+function module_loaded_or_default() {
+    
+    local app=$1
+
+    # combine two sources of module information:
+    # - the output of `module list`, and
+    # - the $LOADEDMODULES environment variable
+    m=$( ( module -t list 2>&1; echo $LOADEDMODULES | sed 's/:/\n/g' ) \
+            | egrep "^${app}/" \
+            | sort -r \
+            | head -n 1 )
+
+    [ "$m" == "" ] && echo $app || echo $m
+}
+
+#---------------------------------------------------------------------#
 # module_loaded_version: gets the currently loaded version of a given #
 #                        module.                                      #
 #---------------------------------------------------------------------#
