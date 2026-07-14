@@ -3,37 +3,50 @@
 # 20170217 edwger: initial script to redirect jupyter if not notebook arg
 #
 
-usage(){
-   echo "Usage: $0 [-h] [--version] [--config-dir] [--data-dir] [--runtime-dir]
-               [--paths] [--json]
-               [subcommand]
-jupyter: error: one of the arguments --version subcommand --config-dir --data-dir --runtime-dir --paths is required"
-   exit 1
-}
-
-if (( $# < 1 )); then
-   usage
+# determin jupyer subcommand from script name or first argument
+subcommand=$(echo $0 | sed 's/^jupyter-//g')
+if [ "$subcommand" == "" ]; then
+    [ $# -lt 1 ] && echo "Missing jupyter subcommand argument" >&2 && exit 1
+    subcommand="$1"
 fi
 
-if [[ $( hostname -s ) =~ mentat[0-9]+ ]]; then
-    case "$1" in
-        notebook)
-           /opt/cluster/bin/slurm/jupyter-notebook
-           ;;
-        lab)
-           /opt/cluster/bin/slurm/jupyter-lab
-           ;;
-        *)
-           echo "Running Jupyter interactively on an access node is not allowed." >&2 && exit 1
-           ;;
-    esac
-else
-    jupyter_bin=$( which jupyter | grep -v /opt/cluster/bin )
+[[ "$subcommand" != "notebook" && "$subcommand" != "lab" ]] && echo "subcommand not supported: $subcommand" >&2 && exit 1
 
-    [ $? -ne 0 ] &&
-       echo -e "Command jupyter \033[31mFAILED\033[0m!" &&
-       echo Make sure module is loaded. &&
-       exit 1
-  
-    $jupyter_bin $@
+# load helper functions
+source $CLUSTER_UTIL_ROOT/share/cluster-lib.sh
+
+ensure_environment_module
+
+SELECTION=$(yad \
+    --center \
+    --width=300 \
+    --ontop \
+    --buttons-layout=center \
+    --title="Jupyter-Notebook" \
+    --text="Select desired Anaconda version:" \
+    --text-align=center \
+    --form \
+    --separator=" " \
+    --item-separator="\n" \
+    --field="Anaconda Version:":CB \
+    "$(module_avail_versions 'anaconda3')")
+ret=$?
+if [[ $ret -eq 1 ]] || [[ $ret -eq 252 ]]
+then
+    echo "Command Cancelled"; exit 0
+fi
+
+IFS=' ' read -r -a CHOICES <<< $SELECTION
+NOTEBOOK_SELECTION=$(echo ${CHOICES[0]})
+
+module unload anaconda anaconda2 anaconda3 > /dev/null 2>&1
+
+echo "Loading module anaconda3/$NOTEBOOK_SELECTION ..."
+module load anaconda3/$NOTEBOOK_SELECTION
+
+if [ -z $SLURM_JOBID ]; then
+    run_guiapp Jupyter-$subcommand "jupyter $subcommand --ip=\$(hostname -f) --notebook-dir=\$SLURM_SUBMIT_DIR" guimenu
+else
+    echo "Starting jupyter lab gui App..."
+    jupyter $subcommand --ip=$(hostname -f) --notebook-dir=.
 fi
