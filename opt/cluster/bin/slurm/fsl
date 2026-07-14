@@ -7,6 +7,12 @@
 # 20170217 edwger: initial torque wrapperscript
 #
 
+function fsl_executable() {
+    [[ "$FSLDIR" != "" && -x "$FSLDIR/bin/fsl" ]] &&
+        echo "$FSLDIR/bin/fsl" ||
+        which fsl
+}
+
 # load helper functions
 source $CLUSTER_UTIL_ROOT/share/cluster-lib.sh
 
@@ -42,8 +48,8 @@ echo "Loading module fsl/$FSL_SELECTION ..."
 module load fsl/$FSL_SELECTION
 
 if [ -z $SLURM_JOBID ]; then
-    run_guiapp FSL $FSLDIR/bin/fsl guimenu
+    run_guiapp FSL "$(fsl_executable)" guimenu
 else
     echo "Starting fsl gui App..."
-    $FSLDIR/bin/fsl &
+    "$(fsl_executable)" &
 fi
