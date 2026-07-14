@@ -121,6 +121,5 @@ if [ -z $SLURM_JOBID ]; then
     run_guiapp SPYDER spyder guimenu
 else
     echo "Starting spyder gui App..."
-    echo $PATH
     spyder 2>/dev/null &
 fi
