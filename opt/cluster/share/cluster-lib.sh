@@ -179,6 +179,24 @@ function module_avail_versions() {
     done
 }
 
+function path_avail_versions() {
+    local app=/opt/$1
+    local excluded=("${@:2}")
+
+    ls ${app} 2>&1 |  sed "s|${app}/||g" | sort -r | while read l; do
+
+        # check if the version is in the excluded list
+        for ex in "${excluded[@]}"; do
+            if [ "$l" == "$ex" ]; then
+                continue 2
+            fi
+        done
+
+        # print out all available versions, excluding the default
+        echo "${l}"
+    done
+}
+
 #---------------------------------------------------------------------#
 # rem_walltime: calculate remaining hours/minutes until 8 pm          #
 #---------------------------------------------------------------------#
