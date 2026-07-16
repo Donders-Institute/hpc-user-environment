@@ -2,7 +2,7 @@
 
 # slurm srun interactive bash
 
-[ ! -z $SLURM_JOBID] && echo "sbash within a slurm job is not supported" >&2 && exit 1
+[ ! -z $SLURM_JOBID ] && echo "sbash within a slurm job is not supported" >&2 && exit 1
 
 # load helper functions
 source $CLUSTER_UTIL_ROOT/share/cluster-lib.sh
