@@ -179,6 +179,15 @@ function module_avail_versions() {
     done
 }
 
+#---------------------------------------------------------------------#
+# path_avail_versions: get a list of /opt software versions by        #
+#                      checking the version directories of the        #
+#                      specified software package in /opt.            #
+#                                                                     #
+#    The output is reverse-sorted alphabetically.                     #
+#                                                                     #
+#    Versions are printed line-by-line.                               #
+#---------------------------------------------------------------------#
 function path_avail_versions() {
     local app=/opt/$1
     local excluded=("${@:2}")
