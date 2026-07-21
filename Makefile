@@ -16,7 +16,7 @@ $(PREFIX)/%: opt/%
 		echo "$$msg $< -> $@"; \
 		if [ "${DRYRUN}" != "true" ]; then \
 			mkdir -p $(dir $@); \
-			cp -a "$<" "$@"; \
+			cp "$<" "$@"; \
 		fi; \
 	else \
 		msg="Unchanged"; \
