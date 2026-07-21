@@ -10,11 +10,16 @@ list:
 	@printf "%s\n" $(DST)
 
 $(PREFIX)/%: opt/%
-	@if [ "${DRYRUN}" == "true" ]; then \
-		echo "[DRYRUN] $< -> $@"; \
+	@if [ ! -e "$@" ] || ! diff -q "$<" "$@" >/dev/null 2>&1; then \
+		msg="Installing"; \
+		[ "${DRYRUN}" = "true" ] && msg="[DRYRUN]"; \
+		echo "$$msg $< -> $@"; \
+		if [ "${DRYRUN}" != "true" ]; then \
+			mkdir -p $(dir $@); \
+			cp -a "$<" "$@"; \
+		fi; \
 	else \
-		mkdir -p $(dir $@); \
-		echo "Installing $< -> $@"; \
-		cp -a "$<" "$@"; \
+		msg="Unchanged"; \
+		[ "${DRYRUN}" = "true" ] && msg="[DRYRUN] Unchanged"; \
+		echo "$$msg: $@"; \
 	fi
-

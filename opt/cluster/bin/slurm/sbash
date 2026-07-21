@@ -2,6 +2,8 @@
 
 # slurm srun interactive bash
 
+[ ! -z $SLURM_JOBID ] && echo "sbash within a slurm job is not supported" >&2 && exit 1
+
 # load helper functions
 source $CLUSTER_UTIL_ROOT/share/cluster-lib.sh
 
@@ -63,8 +65,8 @@ else
 
     echo -e "\033[1mSubmitting job for interactive BASH session ... \033[0m"
     echo
-    echo "srun -Q --mail-type=FAIL --job-name=${name_guiapp} ${RESRC_REQUIREMENT} --partition=interactive --pty bash -c \"ulimit -v unlimited && export DISPLAY=${vncDisplay} && /opt/cluster/bin/slurm/yadjobinfo-slurm && bash -l\""
+    echo "srun -Q --mail-type=FAIL --job-name=${name_guiapp} ${RESRC_REQUIREMENT} --partition=interactive --pty bash -c \"ulimit -v unlimited && export DISPLAY=${vncDisplay} && $CLUSTER_UTIL_ROOT/bin/slurm/yadjobinfo-slurm && bash -l\""
     echo
     vncDisplay=$(hostname -f):$(echo $DISPLAY | awk -F ':' '{print $2}')
-    srun -Q --mail-type=FAIL --job-name=${name_guiapp} --partition=interactive ${RESRC_REQUIREMENT} --pty bash -c "ulimit -v unlimited && export DISPLAY=${vncDisplay} && /opt/cluster/bin/slurm/yadjobinfo-slurm && bash -l"
+    srun -Q --mail-type=FAIL --job-name=${name_guiapp} --partition=interactive ${RESRC_REQUIREMENT} --pty bash -c "ulimit -v unlimited && export DISPLAY=${vncDisplay} && ${CLUSTER_UTIL_ROOT}/bin/slurm/yadjobinfo-slurm && bash -l"
 fi

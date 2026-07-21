@@ -12,11 +12,11 @@
 # honlee - 11jan2022: rollback change on 02nov2021
 # honlee - 11jan2022: added `module unload matlab` in torque job to avoid MATLAB_BIN env. variable being removed
 # honlee - 12dec2025: added `--ncpus` option to use more than 1 CPU cores on a node, default is 1
-# honlee - 17feb2026: relocated source file
+# honlee - 17feb2026: relocated source file 
 # edwger - 07may2026: check matlab script file(s) for hyphens in filename
 
 # load helper functions 
-source $CLUSTER_UTIL_ROOT/share/matlabXX-lib.sh
+source $CLUSTER_UTIL_ROOT/share/cluster-lib.sh
 
 usage() {
 cat << EOF
@@ -83,8 +83,7 @@ if [ ! -z "$HELP" ]; then
 fi
 
 # get matlab module
-#MATLAB_MODULE=`getLoadedMatlabModule`
-MATLAB_MODULE=`getLoadedMatlabModuleFromEnv $LOADEDMODULES`
+MATLAB_MODULE=$( module_loaded_or_default "matlab" )
 
 echo $MATLAB_MODULE
 

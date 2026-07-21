@@ -7,6 +7,7 @@ set appdesc "a collection of home-grown cluster utilities/scripts"
 ## require $version varaible to be set
 module-whatis [WhatIs]
 setenv CLUSTER_UTIL_ROOT $env(DCCN_OPT_DIR)/cluster
+setenv CLUSTER_ADMINS "h.lee@donders.ru.nl e.gerrits@donders.ru.nl helpdesk@donders.ru.nl"
 prepend-path PATH "$env(CLUSTER_UTIL_ROOT)/sbin"
 prepend-path PATH "$env(CLUSTER_UTIL_ROOT)/bin"
 prepend-path MANPATH "$env(CLUSTER_UTIL_ROOT)/man"
